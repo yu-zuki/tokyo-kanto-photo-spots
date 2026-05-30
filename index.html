@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>东京・关东摄影地点筛选器</title>
+    <link rel="stylesheet" href="assets/styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">Tokyo / Kanto Field Notes</p>
+        <h1>东京・关东摄影取景手册</h1>
+      </div>
+      <div class="header-stats" aria-label="数据概览">
+        <div><strong id="totalCount">260</strong><span>候选地点</span></div>
+        <div><strong id="avgScore">-</strong><span>平均分</span></div>
+        <div><strong id="savedCount">0</strong><span>已收藏</span></div>
+      </div>
+    </header>
+
+    <main class="layout">
+      <aside class="sidebar" aria-label="筛选条件">
+        <section class="panel controls">
+          <div class="panel-title">
+            <h2>筛选</h2>
+            <button class="icon-button" id="resetFilters" type="button" title="重置筛选" aria-label="重置筛选">↺</button>
+          </div>
+
+          <label class="search-box">
+            <span>搜索</span>
+            <input id="searchInput" type="search" placeholder="地点、区域、画面、镜头..." autocomplete="off" />
+          </label>
+
+          <label>
+            <span>候选等级</span>
+            <select id="gradeFilter"></select>
+          </label>
+
+          <label>
+            <span>都县</span>
+            <select id="prefFilter"></select>
+          </label>
+
+          <label>
+            <span>类型</span>
+            <select id="typeFilter"></select>
+          </label>
+
+          <label>
+            <span>交通级别</span>
+            <select id="trafficFilter"></select>
+          </label>
+
+          <label>
+            <span>最低总分 <b id="minScoreValue">0</b></span>
+            <input id="minScore" type="range" min="0" max="100" value="0" />
+          </label>
+
+          <label class="check-row">
+            <input id="savedOnly" type="checkbox" />
+            <span>只看收藏</span>
+          </label>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title">
+            <h2>评分模型</h2>
+          </div>
+          <div id="scoringModel" class="scoring-list"></div>
+        </section>
+      </aside>
+
+      <section class="content">
+        <section class="toolbar">
+          <div>
+            <p class="muted">当前结果</p>
+            <h2><span id="resultCount">0</span> 个地点</h2>
+          </div>
+          <div class="toolbar-actions">
+            <label>
+              <span>排序</span>
+              <select id="sortSelect">
+                <option value="score-desc">总分高到低</option>
+                <option value="score-asc">总分低到高</option>
+                <option value="niche-desc">小众发挥高到低</option>
+                <option value="traffic">交通优先</option>
+                <option value="name">地点名称</option>
+              </select>
+            </label>
+            <div class="view-toggle" role="group" aria-label="视图切换">
+              <button class="active" id="cardViewBtn" type="button">卡片</button>
+              <button id="tableViewBtn" type="button">表格</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="summary-grid" aria-label="结果摘要">
+          <div class="panel">
+            <h2>等级分布</h2>
+            <div id="gradeChart" class="bar-chart"></div>
+          </div>
+          <div class="panel">
+            <h2>类型概览</h2>
+            <div id="typeChart" class="bar-chart compact"></div>
+          </div>
+          <div class="panel highlight">
+            <h2>最高分地点</h2>
+            <div id="bestSpot"></div>
+          </div>
+        </section>
+
+        <section id="cards" class="cards" aria-live="polite"></section>
+
+        <section id="tableWrap" class="table-wrap hidden" aria-live="polite">
+          <table>
+            <thead>
+              <tr>
+                <th>收藏</th>
+                <th>地点</th>
+                <th>都县</th>
+                <th>区域</th>
+                <th>类型</th>
+                <th>交通</th>
+                <th>最佳时间</th>
+                <th>镜头</th>
+                <th>总分</th>
+                <th>小众</th>
+                <th>来源</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </section>
+      </section>
+    </main>
+
+    <script src="assets/data.js"></script>
+    <script src="assets/photo_meta.js"></script>
+    <script src="assets/app.js"></script>
+  </body>
+</html>

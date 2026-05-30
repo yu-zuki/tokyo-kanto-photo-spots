@@ -103,6 +103,7 @@
             <div class="view-toggle" role="group" aria-label="表示切替">
               <button class="active" id="cardViewBtn" type="button">カード</button>
               <button id="tableViewBtn" type="button">表</button>
+              <button id="mapViewBtn" type="button">地図</button>
             </div>
           </div>
         </section>
@@ -130,12 +131,26 @@
             <tbody id="tableBody"></tbody>
           </table>
         </section>
+
+        <section id="mapWrap" class="map-wrap hidden" aria-live="polite">
+          <div class="map-head">
+            <div>
+              <p class="muted">位置一覧</p>
+              <h2><span id="mapCount">0</span> 件を表示</h2>
+            </div>
+            <p id="mapPrecision" class="map-note"></p>
+          </div>
+          <div id="mapCanvas" class="map-canvas"></div>
+          <div id="mapFallback" class="map-fallback hidden"></div>
+        </section>
       </section>
     </main>
 
     <script src="assets/data.js"></script>
     <script src="assets/photo_meta.js"></script>
     <script src="assets/japanese_photo_refs.js"></script>
+    <script src="assets/spot_locations.js"></script>
+    <script src="assets/map_config.js"></script>
     <script src="assets/app.js"></script>
   </body>
 </html>

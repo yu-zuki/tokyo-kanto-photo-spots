@@ -1,6 +1,8 @@
 const DATA = window.PHOTO_SPOTS_DATA;
 const PHOTO_META = window.PHOTO_SPOTS_PHOTOS || {};
 const JAPAN_PHOTO_REFS = window.JAPAN_PHOTO_REFS || {};
+const LOCATION_DATA = window.PHOTO_SPOTS_LOCATIONS || { locations: {}, meta: {} };
+const MAP_CONFIG = window.PHOTO_SPOTS_MAP_CONFIG || { provider: "leaflet", googleMapsApiKey: "" };
 
 const rawSpots = DATA.spots;
 
@@ -111,6 +113,8 @@ const state = {
 
 const saved = new Set(JSON.parse(localStorage.getItem("photoSpotSaved") || "[]"));
 let tableColumns = loadTableColumns();
+let mapRuntime = { provider: null, map: null, layer: null, markers: [], infoWindow: null };
+let mapRenderToken = 0;
 
 const el = {
   totalCount: document.querySelector("#totalCount"),
@@ -130,6 +134,7 @@ const el = {
   sortSelect: document.querySelector("#sortSelect"),
   cardViewBtn: document.querySelector("#cardViewBtn"),
   tableViewBtn: document.querySelector("#tableViewBtn"),
+  mapViewBtn: document.querySelector("#mapViewBtn"),
   scoringModel: document.querySelector("#scoringModel"),
   gradeChart: document.querySelector("#gradeChart"),
   typeChart: document.querySelector("#typeChart"),
@@ -138,6 +143,11 @@ const el = {
   tableWrap: document.querySelector("#tableWrap"),
   tableHead: document.querySelector("#tableHead"),
   tableBody: document.querySelector("#tableBody"),
+  mapWrap: document.querySelector("#mapWrap"),
+  mapCanvas: document.querySelector("#mapCanvas"),
+  mapFallback: document.querySelector("#mapFallback"),
+  mapCount: document.querySelector("#mapCount"),
+  mapPrecision: document.querySelector("#mapPrecision"),
 };
 
 const spots = rawSpots.map((spot) => ({
@@ -509,6 +519,10 @@ function japanRefsForSpot(spot) {
   return JAPAN_PHOTO_REFS[String(spot.ID)] || [];
 }
 
+function locationForSpot(spot) {
+  return LOCATION_DATA.locations[String(spot.ID)] || null;
+}
+
 function mapsUrlForSpot(spot) {
   const meta = metaForSpot(spot);
   if (meta.mapsUrl) return meta.mapsUrl;
@@ -559,14 +573,15 @@ function render() {
   el.savedCount.textContent = saved.size;
   renderCharts(list);
   renderBest(list);
+  el.cards.classList.toggle("hidden", state.view !== "cards");
+  el.tableWrap.classList.toggle("hidden", state.view !== "table");
+  el.mapWrap.classList.toggle("hidden", state.view !== "map");
   if (state.view === "cards") {
-    el.cards.classList.remove("hidden");
-    el.tableWrap.classList.add("hidden");
     renderCards(list);
-  } else {
-    el.cards.classList.add("hidden");
-    el.tableWrap.classList.remove("hidden");
+  } else if (state.view === "table") {
     renderTable(list);
+  } else {
+    renderMap(list);
   }
 }
 
@@ -699,6 +714,173 @@ function tableCell(column, spot) {
     source: `${japanRefsForSpot(spot)[0] ? `<a class="source-link" href="${escapeHtml(japanRefsForSpot(spot)[0].url)}" target="_blank" rel="noreferrer">${escapeHtml(japanRefsForSpot(spot)[0].name)}</a><br>` : ""}<a class="source-link" href="${escapeHtml(mapsUrlForSpot(spot))}" target="_blank" rel="noreferrer">地図</a>`,
   };
   return `<td style="width:${column.width}px;min-width:${column.width}px;max-width:${column.width}px">${cell[column.id] || ""}</td>`;
+}
+
+function renderMap(list) {
+  const token = ++mapRenderToken;
+  const located = list.map((spot) => ({ spot, location: locationForSpot(spot) })).filter((item) => item.location);
+  const approximate = located.filter((item) => item.location.precision === "approximate").length;
+  el.mapCount.textContent = located.length;
+  el.mapPrecision.textContent = approximate
+    ? `${located.length - approximate}件は実座標、${approximate}件は都県ベースの概略位置`
+    : "全件が実座標または検索座標です";
+  el.mapFallback.classList.add("hidden");
+
+  ensureMapProvider()
+    .then((provider) => {
+      if (token !== mapRenderToken) return;
+      if (provider === "google") {
+        renderGoogleMap(located);
+      } else {
+        renderLeafletMap(located);
+      }
+    })
+    .catch(() => renderMapFallback(located));
+}
+
+function ensureMapProvider() {
+  if (MAP_CONFIG.provider === "google" && MAP_CONFIG.googleMapsApiKey) {
+    return ensureGoogleMaps().then(() => "google");
+  }
+  return ensureLeaflet().then(() => "leaflet");
+}
+
+function ensureLeaflet() {
+  if (window.L) return Promise.resolve();
+  if (!document.querySelector("link[data-leaflet]")) {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+    link.dataset.leaflet = "true";
+    document.head.appendChild(link);
+  }
+  return loadScript("leaflet-js", "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js");
+}
+
+function ensureGoogleMaps() {
+  if (window.google?.maps) return Promise.resolve();
+  const params = new URLSearchParams({ key: MAP_CONFIG.googleMapsApiKey, v: "weekly" });
+  return loadScript("google-maps-js", `https://maps.googleapis.com/maps/api/js?${params.toString()}`);
+}
+
+function loadScript(id, src) {
+  const existing = document.querySelector(`script[data-loader="${id}"]`);
+  if (existing) return existing.dataset.loaded === "true" ? Promise.resolve() : new Promise((resolve, reject) => {
+    existing.addEventListener("load", resolve, { once: true });
+    existing.addEventListener("error", reject, { once: true });
+  });
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = src;
+    script.async = true;
+    script.dataset.loader = id;
+    script.addEventListener("load", () => {
+      script.dataset.loaded = "true";
+      resolve();
+    });
+    script.addEventListener("error", reject);
+    document.head.appendChild(script);
+  });
+}
+
+function renderLeafletMap(located) {
+  if (!mapRuntime.map || mapRuntime.provider !== "leaflet") {
+    mapRuntime = { provider: "leaflet", map: window.L.map(el.mapCanvas, { scrollWheelZoom: true }), layer: null, markers: [] };
+    window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 18,
+      attribution: "&copy; OpenStreetMap contributors",
+    }).addTo(mapRuntime.map);
+    mapRuntime.layer = window.L.layerGroup().addTo(mapRuntime.map);
+  }
+  mapRuntime.layer.clearLayers();
+  const bounds = [];
+  located.forEach(({ spot, location }) => {
+    const latlng = [location.lat, location.lng];
+    bounds.push(latlng);
+    window.L.circleMarker(latlng, {
+      radius: location.precision === "approximate" ? 6 : 7,
+      color: markerColor(spot),
+      fillColor: markerColor(spot),
+      fillOpacity: location.precision === "approximate" ? 0.45 : 0.82,
+      weight: location.precision === "approximate" ? 1 : 2,
+    })
+      .bindPopup(mapPopupHtml(spot, location), { maxWidth: 280 })
+      .addTo(mapRuntime.layer);
+  });
+  setTimeout(() => mapRuntime.map.invalidateSize(), 0);
+  if (bounds.length) {
+    mapRuntime.map.fitBounds(bounds, { padding: [30, 30], maxZoom: 11 });
+  } else {
+    mapRuntime.map.setView([35.681236, 139.767125], 8);
+  }
+}
+
+function renderGoogleMap(located) {
+  if (!mapRuntime.map || mapRuntime.provider !== "google") {
+    mapRuntime = {
+      provider: "google",
+      map: new google.maps.Map(el.mapCanvas, { center: { lat: 35.681236, lng: 139.767125 }, zoom: 8, mapTypeControl: false }),
+      markers: [],
+      infoWindow: new google.maps.InfoWindow(),
+    };
+  }
+  mapRuntime.markers.forEach((marker) => marker.setMap(null));
+  mapRuntime.markers = [];
+  const bounds = new google.maps.LatLngBounds();
+  located.forEach(({ spot, location }) => {
+    const position = { lat: location.lat, lng: location.lng };
+    const marker = new google.maps.Marker({
+      position,
+      map: mapRuntime.map,
+      title: spot.jpName,
+      opacity: location.precision === "approximate" ? 0.55 : 1,
+    });
+    marker.addListener("click", () => {
+      mapRuntime.infoWindow.setContent(mapPopupHtml(spot, location));
+      mapRuntime.infoWindow.open({ map: mapRuntime.map, anchor: marker });
+    });
+    mapRuntime.markers.push(marker);
+    bounds.extend(position);
+  });
+  if (located.length) mapRuntime.map.fitBounds(bounds, 30);
+}
+
+function renderMapFallback(located) {
+  el.mapFallback.classList.remove("hidden");
+  el.mapFallback.innerHTML = `
+    <strong>地図ライブラリを読み込めませんでした。</strong>
+    <p>Google Maps のリンクから各地点を開けます。</p>
+    <div class="fallback-links">
+      ${located
+        .slice(0, 80)
+        .map(({ spot }) => `<a href="${escapeHtml(mapsUrlForSpot(spot))}" target="_blank" rel="noreferrer">${escapeHtml(spot.jpName)}</a>`)
+        .join("")}
+    </div>
+  `;
+}
+
+function markerColor(spot) {
+  const grade = spot["候选等级"];
+  if (grade === "S") return "#b9473f";
+  if (grade === "A") return "#147c86";
+  if (grade === "B") return "#315f9c";
+  return "#8a6b3f";
+}
+
+function mapPopupHtml(spot, location) {
+  const meta = metaForSpot(spot);
+  const imgSrc = meta.localImageUrl || meta.imageUrl;
+  const precision = location.precision === "approximate" ? "概略位置" : "実座標";
+  return `
+    <div class="map-popup">
+      ${imgSrc ? `<img src="${escapeHtml(imgSrc)}" alt="">` : ""}
+      <strong>${escapeHtml(spot.jpName)}</strong>
+      <span>${escapeHtml(spot.jpPref)} / ${escapeHtml(spot.jpArea)}</span>
+      <span>${escapeHtml(spot.jpType)}・${escapeHtml(spot["候选等级"])}ランク・${escapeHtml(spot["总分100"])}点</span>
+      <span>位置精度: ${escapeHtml(precision)}</span>
+      <a href="${escapeHtml(mapsUrlForSpot(spot))}" target="_blank" rel="noreferrer">Google Mapsで開く</a>
+    </div>
+  `;
 }
 
 function renderTableHead() {
@@ -942,6 +1124,7 @@ function bindEvents() {
   el.resetFilters.addEventListener("click", resetFilters);
   el.cardViewBtn.addEventListener("click", () => setView("cards"));
   el.tableViewBtn.addEventListener("click", () => setView("table"));
+  el.mapViewBtn.addEventListener("click", () => setView("map"));
   document.addEventListener("click", (event) => {
     const saveButton = event.target.closest("[data-save]");
     if (saveButton) updateSaved(saveButton.dataset.save);
@@ -999,6 +1182,7 @@ function setView(view) {
   state.view = view;
   el.cardViewBtn.classList.toggle("active", view === "cards");
   el.tableViewBtn.classList.toggle("active", view === "table");
+  el.mapViewBtn.classList.toggle("active", view === "map");
   render();
 }
 

@@ -1,5 +1,6 @@
 const DATA = window.PHOTO_SPOTS_DATA;
 const PHOTO_META = window.PHOTO_SPOTS_PHOTOS || {};
+const JAPAN_PHOTO_REFS = window.JAPAN_PHOTO_REFS || {};
 const spots = DATA.spots;
 const scoreFields = [
   ["交通", "交通分20", 20],
@@ -51,6 +52,24 @@ const el = {
   tableBody: document.querySelector("#tableBody"),
 };
 
+const photoSiteSummary = [
+  {
+    name: "GANREF",
+    role: "拍摄地库 / 投稿作品",
+    url: "https://ganref.jp/spot/photo/jpn/tokyo.html",
+  },
+  {
+    name: "PHOTOHITO",
+    role: "摄影分享 / 撮影地地图",
+    url: "https://photohito.com/map/",
+  },
+  {
+    name: "东京相机部",
+    role: "日本大型摄影社群",
+    url: "https://tokyocameraclub.com/about/",
+  },
+];
+
 function uniqueValues(key) {
   return [...new Set(spots.map((spot) => spot[key]).filter(Boolean))].sort((a, b) =>
     String(a).localeCompare(String(b), "zh-Hans-CN"),
@@ -93,6 +112,10 @@ function metaForSpot(spot) {
   return PHOTO_META[String(spot.ID)] || {};
 }
 
+function japanRefsForSpot(spot) {
+  return JAPAN_PHOTO_REFS[String(spot.ID)] || [];
+}
+
 function mapsUrlForSpot(spot) {
   const meta = metaForSpot(spot);
   if (meta.mapsUrl) return meta.mapsUrl;
@@ -109,9 +132,12 @@ function photoSearchUrlForSpot(spot) {
 
 function photoFigure(spot, size = "card") {
   const meta = metaForSpot(spot);
+  const primaryRef = japanRefsForSpot(spot)[0];
   const caption = meta.imageUrl
-    ? `${meta.photoSource || "公开图片"}${meta.license ? ` / ${meta.license}` : ""}`
-    : "暂无公开匹配照片";
+    ? `${primaryRef ? `${primaryRef.name}优先参考 / ` : ""}${meta.photoSource || "公开图片"}${meta.license ? ` / ${meta.license}` : ""}`
+    : primaryRef
+      ? `${primaryRef.name}照片参考优先`
+      : "暂无公开匹配照片";
   if (!meta.imageUrl) {
     return `
       <figure class="${size === "best" ? "best-photo" : "spot-photo"} photo-empty">
@@ -216,8 +242,14 @@ function cardTemplate(spot) {
       </div>
       <div class="score-breakdown">${scoreFields.map((field) => miniScore(spot, field)).join("")}</div>
       <div class="link-row">
+        ${japanRefsForSpot(spot)
+          .slice(0, 3)
+          .map(
+            (ref, index) =>
+              `<a class="source-link ${index === 0 ? "primary-photo-link" : ""}" href="${escapeHtml(ref.url)}" target="_blank" rel="noreferrer">${escapeHtml(ref.name)}</a>`,
+          )
+          .join("")}
         <a class="source-link map-link" href="${escapeHtml(mapsUrlForSpot(spot))}" target="_blank" rel="noreferrer">Google Maps</a>
-        <a class="source-link" href="${escapeHtml(photoSearchUrlForSpot(spot))}" target="_blank" rel="noreferrer">照片搜索</a>
         ${metaForSpot(spot).photoPage ? `<a class="source-link" href="${escapeHtml(metaForSpot(spot).photoPage)}" target="_blank" rel="noreferrer">照片来源</a>` : ""}
         ${spot["来源URL"] ? `<a class="source-link" href="${escapeHtml(spot["来源URL"])}" target="_blank" rel="noreferrer">资料来源</a>` : ""}
       </div>
@@ -267,9 +299,10 @@ function renderTable(list) {
           <td class="score-cell">${escapeHtml(spot["总分100"])}</td>
           <td>${escapeHtml(spot["小众/可发挥参考"] ?? "-")}</td>
           <td>
+            ${japanRefsForSpot(spot)[0] ? `<a class="source-link" href="${escapeHtml(japanRefsForSpot(spot)[0].url)}" target="_blank" rel="noreferrer">${escapeHtml(japanRefsForSpot(spot)[0].name)}</a><br>` : ""}
             <a class="source-link" href="${escapeHtml(mapsUrlForSpot(spot))}" target="_blank" rel="noreferrer">地图</a>
             <br>
-            <a class="source-link" href="${escapeHtml(photoSearchUrlForSpot(spot))}" target="_blank" rel="noreferrer">照片</a>
+            ${japanRefsForSpot(spot)[1] ? `<a class="source-link" href="${escapeHtml(japanRefsForSpot(spot)[1].url)}" target="_blank" rel="noreferrer">${escapeHtml(japanRefsForSpot(spot)[1].name)}</a>` : `<a class="source-link" href="${escapeHtml(photoSearchUrlForSpot(spot))}" target="_blank" rel="noreferrer">照片</a>`}
           </td>
         </tr>
       `;
@@ -333,8 +366,14 @@ function renderBest(list) {
       <span class="tag">${escapeHtml(best["类型"])}</span>
     </div>
     <div class="link-row">
+      ${japanRefsForSpot(best)
+        .slice(0, 3)
+        .map(
+          (ref, index) =>
+            `<a class="source-link ${index === 0 ? "primary-photo-link" : ""}" href="${escapeHtml(ref.url)}" target="_blank" rel="noreferrer">${escapeHtml(ref.name)}</a>`,
+        )
+        .join("")}
       <a class="source-link map-link" href="${escapeHtml(mapsUrlForSpot(best))}" target="_blank" rel="noreferrer">Google Maps</a>
-      <a class="source-link" href="${escapeHtml(photoSearchUrlForSpot(best))}" target="_blank" rel="noreferrer">照片搜索</a>
     </div>
   `;
 }
@@ -348,6 +387,21 @@ function renderScoringModel() {
           <p>${escapeHtml(row["定义"])}</p>
           <p>${escapeHtml(row["评分原则"])}</p>
         </div>
+      `,
+    )
+    .join("");
+}
+
+function renderPhotoSites() {
+  const panel = document.querySelector("#photoSites");
+  if (!panel) return;
+  panel.innerHTML = photoSiteSummary
+    .map(
+      (site) => `
+        <a class="photo-site-row" href="${escapeHtml(site.url)}" target="_blank" rel="noreferrer">
+          <strong>${escapeHtml(site.name)}</strong>
+          <span>${escapeHtml(site.role)}</span>
+        </a>
       `,
     )
     .join("");
@@ -450,6 +504,7 @@ function init() {
   el.avgScore.textContent = Math.round(spots.reduce((sum, spot) => sum + Number(spot["总分100"] || 0), 0) / spots.length);
 
   renderScoringModel();
+  renderPhotoSites();
   bindEvents();
   syncControls();
   render();

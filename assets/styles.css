@@ -550,6 +550,42 @@ input[type="range"] {
   color: #245951;
 }
 
+.link-row .primary-photo-link {
+  background: #2b261f;
+  border-color: #2b261f;
+  color: #fff7e8;
+}
+
+.photo-site-list {
+  display: grid;
+  gap: 8px;
+}
+
+.photo-site-row {
+  display: grid;
+  gap: 2px;
+  padding: 10px 11px;
+  background: rgba(247, 238, 224, 0.75);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.photo-site-row strong {
+  font-size: 13px;
+}
+
+.photo-site-row span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.photo-site-row:hover {
+  border-color: #bfae98;
+  background: #f5ead8;
+}
+
 .source-link:hover {
   text-decoration: underline;
 }

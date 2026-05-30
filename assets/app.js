@@ -722,7 +722,7 @@ function renderMap(list) {
   const approximate = located.filter((item) => item.location.precision === "approximate").length;
   el.mapCount.textContent = located.length;
   el.mapPrecision.textContent = approximate
-    ? `${located.length - approximate}件は実座標、${approximate}件は都県ベースの概略位置`
+    ? `${located.length - approximate}件は実座標/検索座標、${approximate}件は地域ベースの概略位置`
     : "全件が実座標または検索座標です";
   el.mapFallback.classList.add("hidden");
 
@@ -870,7 +870,7 @@ function markerColor(spot) {
 function mapPopupHtml(spot, location) {
   const meta = metaForSpot(spot);
   const imgSrc = meta.localImageUrl || meta.imageUrl;
-  const precision = location.precision === "approximate" ? "概略位置" : "実座標";
+  const precision = location.precision === "approximate" ? "地域ベースの概略位置" : "実座標/検索座標";
   return `
     <div class="map-popup">
       ${imgSrc ? `<img src="${escapeHtml(imgSrc)}" alt="">` : ""}

@@ -72,7 +72,7 @@ assets/data.js
 
 - `geo-verified`: 写真 metadata などから得た座標。
 - `search`: 地名検索で得た座標。
-- `approximate`: 都県中心から生成した概略位置。
+- `approximate`: 地域中心、または最終手段として都県中心から生成した概略位置。
 
 現在は全 260 件を表示できます。正確な座標がない地点も地図から消えないよう、概略位置で fallback します。
 
@@ -99,7 +99,7 @@ API key がない場合は Leaflet adapter を使います。各 popup には常
 python3 build_spot_locations.py --refresh-missing
 ```
 
-外部 geocoding が不安定な場合でも builder は失敗しない設計です。未解決地点は `prefecture-approx` の概略位置で表示され、あとから cache を修正すれば地図だけ精度を上げられます。
+外部 geocoding が不安定な場合でも builder は失敗しない設計です。未解決地点は `area-approx` または `prefecture-approx` の概略位置で表示され、あとから cache を修正すれば地図だけ精度を上げられます。
 
 ## 拡張時のルール
 

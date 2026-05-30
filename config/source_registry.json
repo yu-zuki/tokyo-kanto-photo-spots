@@ -1,0 +1,171 @@
+{
+  "version": "2026-05-31",
+  "regionScope": [
+    "東京都",
+    "神奈川県",
+    "千葉県",
+    "埼玉県",
+    "茨城県",
+    "栃木県",
+    "群馬県",
+    "山梨県",
+    "静岡県東部"
+  ],
+  "sources": [
+    {
+      "id": "ganref",
+      "name": "GANREF 撮影スポット",
+      "type": "photo_community",
+      "priority": 1,
+      "trust": 0.9,
+      "coverage": "日本全国の撮影スポット。関東ページと都道府県ページを起点にする。",
+      "urlTemplates": [
+        "https://ganref.jp/spot/photo/jpn/kanto.html",
+        "https://ganref.jp/spot/photo/jpn/{prefecture_slug}.html"
+      ],
+      "extract": ["spot_name", "prefecture", "photo_count", "spot_url", "sample_photo_url"],
+      "updateCadenceDays": 30,
+      "rateLimitSeconds": 3,
+      "usage": "候補発見、写真量の参考、既存地点の人気確認。"
+    },
+    {
+      "id": "photohito",
+      "name": "PHOTOHITO 撮影地マップ",
+      "type": "photo_community",
+      "priority": 1,
+      "trust": 0.82,
+      "coverage": "撮影地から写真を探す地図型ソース。",
+      "urlTemplates": [
+        "https://photohito.com/map/",
+        "https://photohito.com/search/photo/?value={query}"
+      ],
+      "extract": ["spot_name", "photo_url", "camera_lens_hint", "spot_url"],
+      "updateCadenceDays": 30,
+      "rateLimitSeconds": 3,
+      "usage": "写真作例、機材傾向、地点名の別名確認。"
+    },
+    {
+      "id": "tokyo_camera_club_spot",
+      "name": "東京カメラ部 PHOTO SPOT SITE",
+      "type": "photo_editorial",
+      "priority": 1,
+      "trust": 0.86,
+      "coverage": "撮影スポット紹介。写真家目線の候補発見に使う。",
+      "urlTemplates": [
+        "https://photospot.tokyocameraclub.com/",
+        "https://photospot.tokyocameraclub.com/?s={query}"
+      ],
+      "extract": ["spot_name", "prefecture", "season", "spot_url", "sample_photo_url"],
+      "updateCadenceDays": 45,
+      "rateLimitSeconds": 3,
+      "usage": "写真映え、季節性、作例の確認。"
+    },
+    {
+      "id": "cizucu",
+      "name": "cizucu",
+      "type": "photo_community",
+      "priority": 2,
+      "trust": 0.72,
+      "coverage": "投稿写真とトレンド確認。",
+      "urlTemplates": ["https://www.cizucu.com/search?q={query}"],
+      "extract": ["recent_signal", "photo_url", "tag", "spot_url"],
+      "updateCadenceDays": 30,
+      "rateLimitSeconds": 3,
+      "usage": "近期热度、现代风格作例、补充照片。"
+    },
+    {
+      "id": "google_maps",
+      "name": "Google Maps",
+      "type": "map",
+      "priority": 1,
+      "trust": 0.95,
+      "coverage": "坐标、导航、正式地点确认。",
+      "urlTemplates": [
+        "https://www.google.com/maps/search/?api=1&query={query}",
+        "https://www.google.com/maps/dir/?api=1&destination={lat},{lng}"
+      ],
+      "extract": ["lat", "lng", "place_id", "maps_url", "business_status"],
+      "updateCadenceDays": 90,
+      "rateLimitSeconds": 2,
+      "usage": "所有 active/candidate 地点的坐标和导航 URL 必须经过这里或人工确认。"
+    },
+    {
+      "id": "go_tokyo",
+      "name": "GO TOKYO",
+      "type": "official_tourism",
+      "priority": 2,
+      "trust": 0.9,
+      "coverage": "東京都公式観光情報。",
+      "urlTemplates": ["https://www.gotokyo.org/jp/search/index.html?keyword={query}"],
+      "extract": ["official_name", "season", "access", "event_status", "official_url"],
+      "updateCadenceDays": 60,
+      "rateLimitSeconds": 2,
+      "usage": "东京地点的正式名、季节、交通和开放状态确认。"
+    },
+    {
+      "id": "kanagawa_now",
+      "name": "観光かながわNOW",
+      "type": "official_tourism",
+      "priority": 2,
+      "trust": 0.88,
+      "coverage": "神奈川県公式観光情報。",
+      "urlTemplates": ["https://www.kanagawa-kankou.or.jp/search?keyword={query}"],
+      "extract": ["official_name", "season", "access", "official_url"],
+      "updateCadenceDays": 60,
+      "rateLimitSeconds": 2,
+      "usage": "神奈川地点的官方确认。"
+    },
+    {
+      "id": "maruchiba",
+      "name": "まるごとe! ちば",
+      "type": "official_tourism",
+      "priority": 2,
+      "trust": 0.88,
+      "coverage": "千葉県公式観光情報。",
+      "urlTemplates": ["https://maruchiba.jp/sys/search?keyword={query}"],
+      "extract": ["official_name", "season", "access", "official_url"],
+      "updateCadenceDays": 60,
+      "rateLimitSeconds": 2,
+      "usage": "千叶地点的官方确认。"
+    },
+    {
+      "id": "chocotabi_saitama",
+      "name": "ちょこたび埼玉",
+      "type": "official_tourism",
+      "priority": 2,
+      "trust": 0.86,
+      "coverage": "埼玉県公式観光情報。",
+      "urlTemplates": ["https://chocotabi-saitama.jp/?s={query}"],
+      "extract": ["official_name", "season", "access", "official_url"],
+      "updateCadenceDays": 60,
+      "rateLimitSeconds": 2,
+      "usage": "埼玉地点的官方确认。"
+    },
+    {
+      "id": "rakuten_travel_mytrip",
+      "name": "楽天トラベルガイド",
+      "type": "travel_media",
+      "priority": 3,
+      "trust": 0.65,
+      "coverage": "旅行媒体，用于发现季节性名单和补充描述。",
+      "urlTemplates": ["https://travel.rakuten.co.jp/mytrip/search?q={query}"],
+      "extract": ["spot_name", "season", "ranking_signal", "article_url"],
+      "updateCadenceDays": 90,
+      "rateLimitSeconds": 3,
+      "usage": "候补发现和季节性参考，不直接作为坐标权威。"
+    },
+    {
+      "id": "instagram_hashtag",
+      "name": "Instagram hashtag search",
+      "type": "social_signal",
+      "priority": 4,
+      "trust": 0.45,
+      "coverage": "近期流行趋势，仅作为 freshness 信号。",
+      "urlTemplates": ["https://www.instagram.com/explore/tags/{hashtag}/"],
+      "extract": ["recent_signal", "hashtag", "style_trend"],
+      "updateCadenceDays": 14,
+      "rateLimitSeconds": 5,
+      "usage": "只影响近期热度，不用于正式名称、坐标或主评分。"
+    }
+  ]
+}

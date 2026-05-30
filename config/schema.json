@@ -1,0 +1,152 @@
+{
+  "version": "2026-05-31",
+  "compiledArtifacts": {
+    "spotList": "assets/data.js",
+    "locations": "assets/spot_locations.js",
+    "photos": "assets/photo_meta.js",
+    "photoReferences": "assets/japanese_photo_refs.js"
+  },
+  "entities": {
+    "spots": {
+      "primaryKey": "spot_id",
+      "fields": {
+        "spot_id": { "type": "string", "required": true },
+        "legacy_id": { "type": "number|null", "required": false },
+        "name_ja": { "type": "string", "required": true },
+        "name_zh": { "type": "string|null", "required": false },
+        "prefecture": { "type": "enum", "required": true },
+        "area": { "type": "string", "required": true },
+        "primary_type": { "type": "enum", "required": true },
+        "secondary_types": { "type": "string[]", "required": false },
+        "main_subject": { "type": "string", "required": true },
+        "best_season_time": { "type": "string", "required": true },
+        "recommended_lens": { "type": "string", "required": true },
+        "access_level": { "type": "string", "required": true },
+        "estimated_time": { "type": "string", "required": true },
+        "status": { "type": "enum", "required": true, "values": ["candidate", "active", "archived", "rejected"] },
+        "created_at": { "type": "date", "required": true },
+        "updated_at": { "type": "date", "required": true }
+      }
+    },
+    "spot_aliases": {
+      "primaryKey": "spot_id+alias",
+      "fields": {
+        "spot_id": { "type": "string", "required": true },
+        "alias": { "type": "string", "required": true },
+        "locale": { "type": "string", "required": true },
+        "source_id": { "type": "string|null", "required": false },
+        "confidence": { "type": "number", "required": true }
+      }
+    },
+    "spot_geo": {
+      "primaryKey": "spot_id",
+      "fields": {
+        "spot_id": { "type": "string", "required": true },
+        "lat": { "type": "number", "required": true },
+        "lng": { "type": "number", "required": true },
+        "google_maps_url": { "type": "string", "required": true },
+        "google_place_id": { "type": "string|null", "required": false },
+        "geo_precision": { "type": "enum", "required": true, "values": ["place", "area", "manual", "fallback"] },
+        "geo_source": { "type": "string", "required": true },
+        "verified_at": { "type": "date", "required": true }
+      }
+    },
+    "spot_scores": {
+      "primaryKey": "spot_id+model_version",
+      "fields": {
+        "spot_id": { "type": "string", "required": true },
+        "model_version": { "type": "string", "required": true },
+        "access": { "type": "number", "required": true },
+        "visual_strength": { "type": "number", "required": true },
+        "subject_density": { "type": "number", "required": true },
+        "light_season_stability": { "type": "number", "required": true },
+        "crowd_control": { "type": "number", "required": true },
+        "gear_fit": { "type": "number", "required": true },
+        "originality": { "type": "number", "required": true },
+        "freshness": { "type": "number", "required": true },
+        "source_confidence": { "type": "number", "required": true },
+        "risk_cost": { "type": "number", "required": true },
+        "total": { "type": "number", "required": true },
+        "grade": { "type": "enum", "required": true, "values": ["S", "A", "B", "C"] },
+        "scored_at": { "type": "date", "required": true }
+      }
+    },
+    "source_observations": {
+      "primaryKey": "observation_id",
+      "fields": {
+        "observation_id": { "type": "string", "required": true },
+        "spot_id": { "type": "string|null", "required": false },
+        "source_id": { "type": "string", "required": true },
+        "source_url": { "type": "string", "required": true },
+        "observed_name": { "type": "string", "required": true },
+        "observed_area": { "type": "string|null", "required": false },
+        "observed_type": { "type": "string|null", "required": false },
+        "photo_count": { "type": "number|null", "required": false },
+        "recent_signal": { "type": "string|null", "required": false },
+        "evidence_text": { "type": "string|null", "required": false },
+        "confidence": { "type": "number", "required": true },
+        "observed_at": { "type": "date", "required": true }
+      }
+    },
+    "media_assets": {
+      "primaryKey": "asset_id",
+      "fields": {
+        "asset_id": { "type": "string", "required": true },
+        "spot_id": { "type": "string", "required": true },
+        "source_id": { "type": "string", "required": true },
+        "source_url": { "type": "string", "required": true },
+        "local_path": { "type": "string", "required": true },
+        "role": { "type": "enum", "required": true, "values": ["hero", "gallery", "reference"] },
+        "width": { "type": "number|null", "required": false },
+        "height": { "type": "number|null", "required": false },
+        "style_tags": { "type": "string[]", "required": false },
+        "downloaded_at": { "type": "date", "required": true }
+      }
+    },
+    "source_registry": {
+      "primaryKey": "source_id",
+      "file": "config/source_registry.json"
+    },
+    "update_runs": {
+      "primaryKey": "run_id",
+      "fields": {
+        "run_id": { "type": "string", "required": true },
+        "started_at": { "type": "date", "required": true },
+        "finished_at": { "type": "date|null", "required": false },
+        "agent": { "type": "string", "required": true },
+        "source_ids": { "type": "string[]", "required": true },
+        "added": { "type": "number", "required": true },
+        "updated": { "type": "number", "required": true },
+        "archived": { "type": "number", "required": true },
+        "rejected": { "type": "number", "required": true },
+        "summary": { "type": "string", "required": true }
+      }
+    }
+  },
+  "taxonomies": {
+    "primary_type": [
+      "都市夜景・建築",
+      "街歩き・人文",
+      "寺社・史跡",
+      "庭園・花",
+      "海岸・富士山",
+      "湖沼・湿原",
+      "渓谷・滝",
+      "山岳・展望",
+      "鉄道・航空",
+      "工場夜景",
+      "動物・テーマ施設"
+    ],
+    "prefecture": [
+      "東京都",
+      "神奈川県",
+      "千葉県",
+      "埼玉県",
+      "茨城県",
+      "栃木県",
+      "群馬県",
+      "山梨県",
+      "静岡県"
+    ]
+  }
+}

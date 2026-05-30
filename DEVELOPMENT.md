@@ -33,6 +33,21 @@
 - `build_spot_locations.py`
   `assets/spot_locations.js` を生成する位置データ builder。
 
+## データモデルと更新 Flow
+
+現在の `assets/*.js` はブラウザ表示用のコンパイル済みデータです。今後は 260 件固定のリストとして扱わず、以下の定義を正とします。
+
+- `docs/DATA_MODEL.md`
+  地点、別名、座標、評価、来源、写真、更新履歴を分離した論理データモデル。
+- `docs/AGENT_UPDATE_FLOW.md`
+  agent が最新情報を収集し、候補追加・既存更新・归档・再评分・静的ファイル生成を行うための手順。
+- `config/schema.json`
+  機械可読のデータベース定義。
+- `config/source_registry.json`
+  GANREF、PHOTOHITO、東京カメラ部、公式観光サイト、Google Maps などの取得元定義。
+- `config/scoring_model.json`
+  100 点評価モデルと S/A/B/C 分級。
+
 ## データ結合
 
 主キーはすべて `spot.ID` です。

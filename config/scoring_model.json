@@ -1,0 +1,82 @@
+{
+  "version": "2026-05-31",
+  "total": 100,
+  "gradeThresholds": {
+    "S": 86,
+    "A": 78,
+    "B": 68,
+    "C": 0
+  },
+  "dimensions": [
+    {
+      "id": "access",
+      "labelJa": "アクセス",
+      "labelZh": "交通便利性",
+      "weight": 15,
+      "description": "从东京圈出发的可达性、换乘复杂度、末班风险、步行距离。"
+    },
+    {
+      "id": "visual_strength",
+      "labelJa": "画の強さ",
+      "labelZh": "画面强度",
+      "weight": 20,
+      "description": "主体辨识度、构图张力、远景/中景/前景层次，以及是否有一眼能成立的照片。"
+    },
+    {
+      "id": "subject_density",
+      "labelJa": "被写体密度",
+      "labelZh": "题材密度",
+      "weight": 12,
+      "description": "同一区域内可拍题材数量，是否能支撑半日或一日拍摄。"
+    },
+    {
+      "id": "light_season_stability",
+      "labelJa": "光・季節の安定性",
+      "labelZh": "光线和季节稳定性",
+      "weight": 12,
+      "description": "一年中可拍窗口、晨昏方向、天气依赖和季节限定程度。"
+    },
+    {
+      "id": "crowd_control",
+      "labelJa": "混雑コントロール",
+      "labelZh": "人流可控性",
+      "weight": 8,
+      "description": "人多时是否仍可构图，是否需要早到、长焦压缩或三脚架避让。"
+    },
+    {
+      "id": "gear_fit",
+      "labelJa": "機材適性",
+      "labelZh": "器材适配度",
+      "weight": 8,
+      "description": "与广角、标准、长焦、三脚架、滤镜、轻装拍摄的匹配程度。"
+    },
+    {
+      "id": "originality",
+      "labelJa": "独自性",
+      "labelZh": "小众性和发挥空间",
+      "weight": 10,
+      "description": "是否容易拍出不同于模板照的作品，是否有个人表达空间。"
+    },
+    {
+      "id": "freshness",
+      "labelJa": "鮮度",
+      "labelZh": "近期热度",
+      "weight": 5,
+      "description": "近期摄影社区、官方活动、花期、开放状态等信号。"
+    },
+    {
+      "id": "source_confidence",
+      "labelJa": "情報信頼度",
+      "labelZh": "来源可信度",
+      "weight": 5,
+      "description": "多来源一致性、官方确认、地图坐标确认和照片证据质量。"
+    },
+    {
+      "id": "risk_cost",
+      "labelJa": "リスク・コスト",
+      "labelZh": "风险和成本",
+      "weight": 5,
+      "description": "门票、许可、交通成本、安全、封路、私有地、夜间风险。分数越高表示风险越低。"
+    }
+  ]
+}

@@ -176,6 +176,48 @@ label {
   font-size: 13px;
 }
 
+.filter-group {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.multi-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  max-height: 132px;
+  overflow: auto;
+  padding: 2px;
+}
+
+.filter-chip {
+  display: inline-grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 5px 9px;
+  background: #f4eadb;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.filter-chip input {
+  width: 14px;
+  min-height: 14px;
+  margin: 0;
+}
+
+.filter-chip:has(input:checked) {
+  background: #2b261f;
+  border-color: #2b261f;
+  color: #fff7e8;
+}
+
 input,
 select {
   width: 100%;
@@ -628,9 +670,10 @@ input[type="range"] {
 
 table {
   width: 100%;
-  min-width: 1120px;
+  min-width: max-content;
   border-collapse: collapse;
   font-size: 13px;
+  table-layout: fixed;
 }
 
 th,
@@ -647,9 +690,55 @@ th {
   background: #f8efe2;
   color: var(--muted);
   font-weight: 700;
+  user-select: none;
+}
+
+th[draggable="true"] {
+  cursor: grab;
+}
+
+th[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.drag-handle {
+  display: inline-block;
+  margin-right: 6px;
+  color: #b59f84;
+  font-size: 12px;
+}
+
+.resize-handle {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 8px;
+  height: 100%;
+  cursor: col-resize;
+}
+
+.resize-handle::after {
+  position: absolute;
+  top: 25%;
+  right: 3px;
+  width: 1px;
+  height: 50%;
+  background: #c9b8a2;
+  content: "";
+}
+
+.resizing-column,
+.resizing-column * {
+  cursor: col-resize !important;
+  user-select: none !important;
 }
 
 td.score-cell {
+  color: var(--teal);
+  font-weight: 750;
+}
+
+.score-cell {
   color: var(--teal);
   font-weight: 750;
 }

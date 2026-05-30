@@ -125,6 +125,28 @@ def search_url(domain, spot):
     return "https://www.google.com/search?q=" + urllib.parse.quote(f"site:{domain} {query}")
 
 
+def instagram_url(spot):
+    """Generate Instagram hashtag search URL with Japanese place name"""
+    hashtag = ja_name(spot.get("地点")).replace(" ", "")
+    return f"https://www.instagram.com/explore/tags/{urllib.parse.quote(hashtag)}/"
+
+
+def cizucu_url(spot):
+    """Generate cizucu search URL - Japanese photo community app"""
+    query = urllib.parse.quote(ja_name(spot.get("地点")))
+    return f"https://www.cizucu.com/search?q={query}"
+
+
+def google_image_url(spot):
+    """Google image search with Japanese terms for practical reference"""
+    query = " ".join(
+        item
+        for item in [ja_name(spot.get("地点")), ja_name(spot.get("区域")), "撮影", "写真"]
+        if item
+    )
+    return f"https://www.google.com/search?tbm=isch&q={urllib.parse.quote(query)}"
+
+
 def match_ganref_spot(spot, catalog):
     names = [spot.get("地点"), *re.split(r"[/／]", str(spot.get("地点") or "")), spot.get("区域")]
     candidates = [normalize(name) for name in names if name]
@@ -145,34 +167,48 @@ def main():
     catalog = ganref_catalog()
     refs = {}
     direct = 0
+
     for spot in spots:
         ganref_direct = match_ganref_spot(spot, catalog)
         if ganref_direct:
             direct += 1
+
         refs[str(spot["ID"])] = [
             {
                 "name": "GANREF",
                 "kind": "spot" if ganref_direct else "prefecture",
                 "url": ganref_direct or ganref_pref_url(spot),
-                "note": "日本摄影投稿/拍摄地库",
+                "note": "日本No.1撮影スポットDB（3000+地点·30万枚）",
             },
             {
                 "name": "PHOTOHITO",
                 "kind": "prefecture",
                 "url": photohito_pref_url(spot),
-                "note": "日本摄影分享站/撮影地地图",
+                "note": "価格.com運営·機材別作例検索が強力",
             },
             {
-                "name": "东京相机部",
+                "name": "東京カメラ部",
                 "kind": "search",
                 "url": search_url("tokyocameraclub.com", spot),
-                "note": "日本大型摄影社群",
+                "note": "日本最大級SNS写真コミュニティ（575万フォロワー）",
             },
             {
-                "name": "GANREF站内检索",
+                "name": "cizucu",
                 "kind": "search",
-                "url": search_url("ganref.jp", spot),
-                "note": "查找投稿作品",
+                "url": cizucu_url(spot),
+                "note": "新興写真コミュニティ·サークル機能で地域検索",
+            },
+            {
+                "name": "Instagram",
+                "kind": "hashtag",
+                "url": instagram_url(spot),
+                "note": "ハッシュタグで撮影地の最新作例を検索",
+            },
+            {
+                "name": "Google画像検索",
+                "kind": "search",
+                "url": google_image_url(spot),
+                "note": "日本语で画像検索→他サイトの作例も発見可",
             },
         ]
 

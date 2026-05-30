@@ -55,18 +55,23 @@ const el = {
 const photoSiteSummary = [
   {
     name: "GANREF",
-    role: "拍摄地库 / 投稿作品",
+    role: "日本No.1撮影スポットDB（3000+地点·30万枚）",
     url: "https://ganref.jp/spot/photo/jpn/tokyo.html",
   },
   {
     name: "PHOTOHITO",
-    role: "摄影分享 / 撮影地地图",
+    role: "価格.com運営·機材別作例検索が強力",
     url: "https://photohito.com/map/",
   },
   {
-    name: "东京相机部",
-    role: "日本大型摄影社群",
+    name: "東京カメラ部",
+    role: "日本最大級SNS写真コミュニティ（575万フォロワー）",
     url: "https://tokyocameraclub.com/about/",
+  },
+  {
+    name: "cizucu",
+    role: "新興写真コミュニティ·サークル機能で地域検索",
+    url: "https://www.cizucu.com/",
   },
 ];
 
@@ -133,12 +138,13 @@ function photoSearchUrlForSpot(spot) {
 function photoFigure(spot, size = "card") {
   const meta = metaForSpot(spot);
   const primaryRef = japanRefsForSpot(spot)[0];
-  const caption = meta.imageUrl
+  const imgSrc = meta.localImageUrl || meta.imageUrl;
+  const caption = imgSrc
     ? `${primaryRef ? `${primaryRef.name}优先参考 / ` : ""}${meta.photoSource || "公开图片"}${meta.license ? ` / ${meta.license}` : ""}`
     : primaryRef
       ? `${primaryRef.name}照片参考优先`
       : "暂无公开匹配照片";
-  if (!meta.imageUrl) {
+  if (!imgSrc) {
     return `
       <figure class="${size === "best" ? "best-photo" : "spot-photo"} photo-empty">
         <div>
@@ -151,7 +157,7 @@ function photoFigure(spot, size = "card") {
   }
   return `
     <figure class="${size === "best" ? "best-photo" : "spot-photo"}">
-      <img src="${escapeHtml(meta.imageUrl)}" alt="${escapeHtml(spot["地点"])} 的公开照片" loading="lazy" />
+      <img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(spot["地点"])} 的公开照片" loading="lazy" />
       <figcaption>${escapeHtml(caption)}</figcaption>
     </figure>
   `;

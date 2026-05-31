@@ -2596,5 +2596,68 @@
     "photoSource": "Flickr (geo-verified)",
     "matchedQuery": "Geo: 35.9724,139.2740",
     "localImageUrl": "assets/photos/ganref/229.jpg"
+  },
+  "261": {
+    "imageUrl": "https://live.staticflickr.com/65535/50535239227_be8451fe79_z.jpg",
+    "localImageUrl": "assets/photos/ganref/261.jpg",
+    "photoSource": "Flickr",
+    "photoPage": "https://www.flickr.com/search/?text=%E6%9D%B1%E4%BA%AC%E3%83%87%E3%82%A3%E3%82%BA%E3%83%8B%E3%83%BC%E3%83%A9%E3%83%B3%E3%83%89",
+    "matchedQuery": "東京ディズニーランド 舞浜"
+  },
+  "262": {
+    "imageUrl": "https://live.staticflickr.com/65535/51758279696_2cca8d9d09_z.jpg",
+    "localImageUrl": "assets/photos/ganref/262.jpg",
+    "photoSource": "Flickr",
+    "photoPage": "https://www.flickr.com/search/?text=%E6%B5%B7%E3%81%BB%E3%81%9F%E3%82%8BPA",
+    "matchedQuery": "海ほたるPA 東京湾"
+  },
+  "263": {
+    "imageUrl": "https://live.staticflickr.com/65535/22887859094_91f85930db_z.jpg",
+    "localImageUrl": "assets/photos/ganref/263.jpg",
+    "photoSource": "Flickr",
+    "photoPage": "https://www.flickr.com/search/?text=%E6%9D%B1%E4%BA%AC%E3%82%B2%E3%83%BC%E3%83%88%E3%83%96%E3%83%AA%E3%83%83%E3%82%B8",
+    "matchedQuery": "東京ゲートブリッジ 台場"
+  },
+  "264": {
+    "imageUrl": "https://live.staticflickr.com/8568/15967930354_fa701bc784_n.jpg",
+    "localImageUrl": "assets/photos/ganref/264.jpg",
+    "photoSource": "Flickr",
+    "photoPage": "https://www.flickr.com/search/?text=%E6%9D%B1%E4%BA%AC%E3%83%89%E3%83%BC%E3%83%A0",
+    "matchedQuery": "東京ドーム 後楽園"
+  },
+  "265": {
+    "imageUrl": "https://live.staticflickr.com/4641/24519970127_7d507f3f1f_z.jpg",
+    "localImageUrl": "assets/photos/ganref/265.jpg",
+    "photoSource": "Flickr",
+    "photoPage": "https://www.flickr.com/search/?text=%E3%82%B5%E3%83%B3%E3%82%B7%E3%83%A3%E3%82%A4%E3%83%B3%E3%82%B7%E3%83%86%E3%82%A3",
+    "matchedQuery": "サンシャインシティ 池袋"
+  },
+  "266": {
+    "imageUrl": "https://live.staticflickr.com/4637/39404860921_6c98e6479c_z.jpg",
+    "localImageUrl": "assets/photos/ganref/266.jpg",
+    "photoSource": "Flickr",
+    "photoPage": "https://www.flickr.com/search/?text=%E6%81%B5%E6%AF%94%E5%AF%BF%E3%82%AC%E3%83%BC%E3%83%87%E3%83%B3%E3%83%97%E3%83%AC%E3%82%A4%E3%82%B9",
+    "matchedQuery": "恵比寿ガーデンプレイス 恵比寿"
+  },
+  "267": {
+    "imageUrl": "https://live.staticflickr.com/65535/50073711447_f9ac2f1aa3_n.jpg",
+    "localImageUrl": "assets/photos/ganref/267.jpg",
+    "photoSource": "Flickr",
+    "photoPage": "https://www.flickr.com/search/?text=%E7%AF%89%E5%9C%B0%E5%B8%82%E5%A0%B4",
+    "matchedQuery": "築地市場 築地"
+  },
+  "268": {
+    "imageUrl": "https://live.staticflickr.com/8749/27817531053_63a0058b37_z.jpg",
+    "localImageUrl": "assets/photos/ganref/268.jpg",
+    "photoSource": "Flickr",
+    "photoPage": "https://www.flickr.com/search/?text=%E8%B5%A4%E3%83%AC%E3%83%B3%E3%82%AC%E5%80%89%E5%BA%AB",
+    "matchedQuery": "赤レンガ倉庫 横浜"
+  },
+  "269": {
+    "imageUrl": "https://live.staticflickr.com/7384/9095815605_7837e984ca_z.jpg",
+    "localImageUrl": "assets/photos/ganref/269.jpg",
+    "photoSource": "Flickr",
+    "photoPage": "https://www.flickr.com/search/?text=%E5%85%AB%E6%99%AF%E5%B3%B6%E3%82%B7%E3%83%BC%E3%83%91%E3%83%A9%E3%83%80%E3%82%A4%E3%82%B9",
+    "matchedQuery": "八景島シーパラダイス 横浜"
   }
 }

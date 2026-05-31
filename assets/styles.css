@@ -57,6 +57,29 @@ button {
   backdrop-filter: blur(14px);
 }
 
+.language-toggle {
+  display: inline-flex;
+  flex: 0 0 auto;
+  padding: 4px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.language-toggle button {
+  min-width: 72px;
+  padding: 8px 10px;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+}
+
+.language-toggle button.active {
+  color: var(--panel);
+  background: var(--teal);
+}
+
 .eyebrow,
 .muted {
   margin: 0;
@@ -897,6 +920,10 @@ td.score-cell {
   .app-header {
     position: static;
     display: grid;
+  }
+
+  .language-toggle {
+    justify-self: start;
   }
 
   .header-stats {

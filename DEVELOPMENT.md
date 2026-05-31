@@ -62,6 +62,27 @@ assets/data.js
 
 このため、新しい撮影地を追加するときは `assets/data.js` に spot を追加し、必要に応じて metadata builder を実行します。UI 側にカード、表行、地図 marker を手で追加する必要はありません。
 
+## フロントエンド Adapter
+
+`assets/app.js` は raw data を直接描画しません。起動時に `normalizeSpot()` で以下の正規化済み構造へ変換し、カード、表、地図、グラフ、フィルタはすべてこの構造を読みます。
+
+- `id`
+- `name.ja` / `name.zh`
+- `prefecture.ja` / `prefecture.zh`
+- `area.ja` / `area.zh`
+- `primaryType.ja` / `primaryType.zh`
+- `typeDetail.ja` / `typeDetail.zh`
+- `visual.ja` / `visual.zh`
+- `season.ja` / `season.zh`
+- `lens.ja` / `lens.zh`
+- `time.ja` / `time.zh`
+- `traffic.rank` / `traffic.ja` / `traffic.zh`
+- `grade`
+- `score`
+- `niche`
+
+メタデータ結合、地図、検索 URL、フィルタ値は日本語の canonical value を使います。中国語は表示翻訳として扱い、座標や来源データの key には使いません。
+
 ## 状態管理
 
 `assets/app.js` の `state` が画面状態の source of truth です。

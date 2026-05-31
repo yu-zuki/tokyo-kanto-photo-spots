@@ -6,6 +6,159 @@ const MAP_CONFIG = window.PHOTO_SPOTS_MAP_CONFIG || { provider: "leaflet", googl
 
 const rawSpots = DATA.spots;
 
+const UI_TEXT = {
+  ja: {
+    "app.title": "東京・関東 撮影地ノート",
+    "stats.total": "候補地",
+    "stats.avg": "平均点",
+    "stats.saved": "保存済み",
+    "filters.aria": "絞り込み条件",
+    "filters.title": "絞り込み",
+    "filters.reset": "絞り込みをリセット",
+    "filters.search": "検索",
+    "filters.searchPlaceholder": "撮影地、エリア、被写体、レンズ...",
+    "filters.grade": "候補ランク",
+    "filters.pref": "都県",
+    "filters.type": "カテゴリ",
+    "filters.access": "アクセス",
+    "filters.time": "移動時間",
+    "filters.minScore": "最低スコア",
+    "filters.savedOnly": "保存済みのみ",
+    "sections.photoSites": "日本の写真サイト",
+    "sections.scoring": "採点モデル",
+    "sections.gradeChart": "ランク分布",
+    "sections.typeChart": "カテゴリ概要",
+    "sections.best": "最高スコア",
+    "toolbar.showing": "表示中",
+    "toolbar.countSuffix": "件",
+    "toolbar.sort": "並び順",
+    "sort.scoreDesc": "スコアが高い順",
+    "sort.scoreAsc": "スコアが低い順",
+    "sort.nicheDesc": "穴場度が高い順",
+    "sort.traffic": "アクセス優先",
+    "sort.name": "撮影地名",
+    "views.cards": "カード",
+    "views.table": "表",
+    "views.map": "地図",
+    "map.title": "位置一覧",
+    "map.countSuffix": "件を表示",
+    "empty.noResults": "条件に合う撮影地がありません。",
+    "empty.noData": "データなし",
+    "photo.checkLinks": "作例リンクから確認",
+    "photo.checkOnSite": "{site}で作例確認",
+    "photo.unset": "写真未設定",
+    "card.save": "保存",
+    "card.recommend": "おすすめ",
+    "card.lens": "レンズ",
+    "card.typeDetail": "カテゴリ詳細",
+    "card.niche": "穴場度",
+    "link.map": "Google Maps",
+    "link.mapShort": "地図",
+    "link.photoSource": "写真元",
+    "map.precisionApprox": "{verified}件は実座標/検索座標、{approximate}件は地域ベースの概略位置",
+    "map.precisionAll": "全件が実座標または検索座標です",
+    "map.loadFailedTitle": "地図ライブラリを読み込めませんでした。",
+    "map.loadFailedBody": "Google Maps のリンクから各地点を開けます。",
+    "map.open": "Google Mapsで開く",
+    "map.precision": "位置精度",
+    "map.precisionApproxLabel": "地域ベースの概略位置",
+    "map.precisionVerifiedLabel": "実座標/検索座標",
+    "common.points": "点",
+    "common.rank": "ランク",
+    "common.unclassified": "未分類"
+  },
+  zh: {
+    "app.title": "东京・关东摄影地笔记",
+    "stats.total": "候选地",
+    "stats.avg": "平均分",
+    "stats.saved": "已收藏",
+    "filters.aria": "筛选条件",
+    "filters.title": "筛选",
+    "filters.reset": "重置筛选",
+    "filters.search": "搜索",
+    "filters.searchPlaceholder": "摄影地、区域、被摄体、镜头...",
+    "filters.grade": "候选等级",
+    "filters.pref": "都县",
+    "filters.type": "分类",
+    "filters.access": "交通",
+    "filters.time": "移动时间",
+    "filters.minScore": "最低分",
+    "filters.savedOnly": "仅显示收藏",
+    "sections.photoSites": "日本摄影网站",
+    "sections.scoring": "评分模型",
+    "sections.gradeChart": "等级分布",
+    "sections.typeChart": "分类概要",
+    "sections.best": "最高分",
+    "toolbar.showing": "当前显示",
+    "toolbar.countSuffix": "件",
+    "toolbar.sort": "排序",
+    "sort.scoreDesc": "分数从高到低",
+    "sort.scoreAsc": "分数从低到高",
+    "sort.nicheDesc": "小众度从高到低",
+    "sort.traffic": "交通优先",
+    "sort.name": "摄影地名",
+    "views.cards": "卡片",
+    "views.table": "表格",
+    "views.map": "地图",
+    "map.title": "位置一览",
+    "map.countSuffix": "件显示中",
+    "empty.noResults": "没有符合条件的摄影地。",
+    "empty.noData": "无数据",
+    "photo.checkLinks": "从作例链接确认",
+    "photo.checkOnSite": "在 {site} 查看作例",
+    "photo.unset": "未设置照片",
+    "card.save": "收藏",
+    "card.recommend": "推荐",
+    "card.lens": "镜头",
+    "card.typeDetail": "分类详情",
+    "card.niche": "小众度",
+    "link.map": "Google 地图",
+    "link.mapShort": "地图",
+    "link.photoSource": "照片来源",
+    "map.precisionApprox": "{verified}件为实坐标/搜索坐标，{approximate}件为区域概略位置",
+    "map.precisionAll": "全部为实坐标或搜索坐标",
+    "map.loadFailedTitle": "地图组件读取失败。",
+    "map.loadFailedBody": "可以通过 Google 地图链接打开各地点。",
+    "map.open": "用 Google 地图打开",
+    "map.precision": "位置精度",
+    "map.precisionApproxLabel": "区域概略位置",
+    "map.precisionVerifiedLabel": "实坐标/搜索坐标",
+    "common.points": "分",
+    "common.rank": "等级",
+    "common.unclassified": "未分类"
+  },
+};
+
+const ZH_META_LABELS = {
+  "東京都": "东京都",
+  "千葉県": "千叶县",
+  "神奈川県": "神奈川县",
+  "埼玉県": "埼玉县",
+  "茨城県": "茨城县",
+  "栃木県": "栃木县",
+  "群馬県": "群马县",
+  "山梨県": "山梨县",
+  "静岡県": "静冈县",
+  "工場夜景": "工厂夜景",
+  "都市夜景": "城市夜景",
+  "街歩き": "街拍",
+  "海岸": "海岸",
+  "庭園・花": "庭园・花",
+  "寺社": "寺社",
+  "展望・山岳": "展望・山岳",
+  "湖沼・湿地": "湖沼・湿地",
+  "鉄道・航空機": "铁道・航空",
+  "渓谷・滝": "溪谷・瀑布",
+  "歴史・遺構": "历史・遗构",
+  "動物・テーマ施設": "动物・主题设施",
+  "0-90分": "0-90分钟",
+  "90-120分": "90-120分钟",
+  "120分前後・車推奨": "约120分钟・推荐开车",
+  "Aランク": "A级",
+  "Bランク": "B级",
+  "Cランク": "C级",
+};
+
 const TYPE_LABELS = {
   "工业": "工場夜景",
   "夜景": "夜景",
@@ -67,38 +220,69 @@ const TIME_LABELS = {
 };
 
 const scoreFields = [
-  ["アクセス", "交通分20", 20],
-  ["画面力", "画面强度25", 25],
-  ["題材密度", "题材密度15", 15],
-  ["光", "光线季节稳定15", 15],
-  ["混雑", "人流可控10", 10],
-  ["機材適性", "器材适配10", 10],
-  ["負担", "风险成本5", 5],
+  [{ ja: "アクセス", zh: "交通" }, "交通分20", 20],
+  [{ ja: "画面力", zh: "画面" }, "画面强度25", 25],
+  [{ ja: "題材密度", zh: "题材" }, "题材密度15", 15],
+  [{ ja: "光", zh: "光线" }, "光线季节稳定15", 15],
+  [{ ja: "混雑", zh: "人流" }, "人流可控10", 10],
+  [{ ja: "機材適性", zh: "器材" }, "器材适配10", 10],
+  [{ ja: "負担", zh: "负担" }, "风险成本5", 5],
 ];
 
 const photoSiteSummary = [
-  { name: "GANREF", role: "撮影スポットDBと投稿作例", url: "https://ganref.jp/spot/photo/jpn/tokyo.html" },
-  { name: "PHOTOHITO", role: "機材別作例と撮影地マップ", url: "https://photohito.com/map/" },
-  { name: "東京カメラ部", role: "日本最大級の写真コミュニティ", url: "https://tokyocameraclub.com/about/" },
-  { name: "cizucu", role: "新しい写真コミュニティ", url: "https://www.cizucu.com/" },
+  { name: "GANREF", role: { ja: "撮影スポットDBと投稿作例", zh: "摄影地点数据库和投稿作例" }, url: "https://ganref.jp/spot/photo/jpn/tokyo.html" },
+  { name: "PHOTOHITO", role: { ja: "機材別作例と撮影地マップ", zh: "按器材查看作例和摄影地地图" }, url: "https://photohito.com/map/" },
+  { name: "東京カメラ部", role: { ja: "日本最大級の写真コミュニティ", zh: "日本大型摄影社区" }, url: "https://tokyocameraclub.com/about/" },
+  { name: "cizucu", role: { ja: "新しい写真コミュニティ", zh: "新兴摄影社区" }, url: "https://www.cizucu.com/" },
 ];
 
 const columnDefaults = [
-  { id: "saved", label: "保存", width: 74 },
-  { id: "spot", label: "撮影地", width: 330 },
-  { id: "pref", label: "都県", width: 100 },
-  { id: "area", label: "エリア", width: 128 },
-  { id: "type", label: "カテゴリ", width: 132 },
-  { id: "traffic", label: "アクセス", width: 96 },
-  { id: "time", label: "移動時間", width: 126 },
-  { id: "season", label: "おすすめ時間", width: 150 },
-  { id: "lens", label: "レンズ", width: 130 },
-  { id: "score", label: "総合", width: 86 },
-  { id: "niche", label: "穴場度", width: 86 },
-  { id: "source", label: "参照", width: 150 },
+  { id: "saved", labelKey: "table.saved", width: 74 },
+  { id: "spot", labelKey: "table.spot", width: 330 },
+  { id: "pref", labelKey: "table.pref", width: 100 },
+  { id: "area", labelKey: "table.area", width: 128 },
+  { id: "type", labelKey: "table.type", width: 132 },
+  { id: "traffic", labelKey: "table.traffic", width: 96 },
+  { id: "time", labelKey: "table.time", width: 126 },
+  { id: "season", labelKey: "table.season", width: 150 },
+  { id: "lens", labelKey: "table.lens", width: 130 },
+  { id: "score", labelKey: "table.score", width: 86 },
+  { id: "niche", labelKey: "table.niche", width: 86 },
+  { id: "source", labelKey: "table.source", width: 150 },
 ];
 
+Object.assign(UI_TEXT.ja, {
+  "table.saved": "保存",
+  "table.spot": "撮影地",
+  "table.pref": "都県",
+  "table.area": "エリア",
+  "table.type": "カテゴリ",
+  "table.traffic": "アクセス",
+  "table.time": "移動時間",
+  "table.season": "おすすめ時間",
+  "table.lens": "レンズ",
+  "table.score": "総合",
+  "table.niche": "穴場度",
+  "table.source": "参照",
+});
+
+Object.assign(UI_TEXT.zh, {
+  "table.saved": "收藏",
+  "table.spot": "摄影地",
+  "table.pref": "都县",
+  "table.area": "区域",
+  "table.type": "分类",
+  "table.traffic": "交通",
+  "table.time": "移动时间",
+  "table.season": "推荐时间",
+  "table.lens": "镜头",
+  "table.score": "总分",
+  "table.niche": "小众度",
+  "table.source": "参考",
+});
+
 const state = {
+  lang: localStorage.getItem("photoSpotLang") || "ja",
   search: "",
   grade: new Set(),
   pref: new Set(),
@@ -110,6 +294,8 @@ const state = {
   sort: "score-desc",
   view: "cards",
 };
+
+if (!UI_TEXT[state.lang]) state.lang = "ja";
 
 const saved = new Set(JSON.parse(localStorage.getItem("photoSpotSaved") || "[]"));
 let tableColumns = loadTableColumns();
@@ -148,21 +334,40 @@ const el = {
   mapFallback: document.querySelector("#mapFallback"),
   mapCount: document.querySelector("#mapCount"),
   mapPrecision: document.querySelector("#mapPrecision"),
+  langJa: document.querySelector("#langJa"),
+  langZh: document.querySelector("#langZh"),
 };
 
-const spots = rawSpots.map((spot) => ({
-  ...spot,
-  jpName: localizeSpotName(spot["地点"]),
-  jpPref: localizePref(spot["都县"]),
-  jpArea: localizeText(spot["区域"]),
-  jpType: primaryType(spot["类型"]),
-  jpTypeDetail: typeDetail(spot["类型"]),
-  jpVisual: localizeText(spot["主要画面"]),
-  jpSeason: localizeText(spot["最佳季节/时间"]),
-  jpLens: localizeText(spot["建议镜头"]),
-  jpTime: TIME_LABELS[spot["预计耗时"]] || localizeText(spot["预计耗时"]),
-  jpTraffic: `${spot["交通级别"]}ランク`,
-}));
+const spots = rawSpots.map(normalizeSpot);
+
+function normalizeSpot(raw) {
+  const nameJa = localizeSpotName(raw["地点"]);
+  const prefJa = localizePref(raw["都县"]);
+  const areaJa = localizeText(raw["区域"]);
+  const typeJa = primaryType(raw["类型"]);
+  const typeDetailJa = typeDetail(raw["类型"]);
+  const timeJa = TIME_LABELS[raw["预计耗时"]] || localizeText(raw["预计耗时"]);
+  const trafficJa = `${raw["交通级别"]}ランク`;
+  return {
+    ...raw,
+    raw,
+    id: String(raw.ID),
+    legacyId: raw.ID,
+    name: { ja: nameJa, zh: raw["地点"] || nameJa },
+    prefecture: { ja: prefJa, zh: ZH_META_LABELS[prefJa] || raw["都县"] || prefJa },
+    area: { ja: areaJa, zh: raw["区域"] || areaJa },
+    primaryType: { ja: typeJa, zh: ZH_META_LABELS[typeJa] || raw["类型"] || typeJa },
+    typeDetail: { ja: typeDetailJa, zh: raw["类型"] || typeDetailJa },
+    visual: { ja: localizeText(raw["主要画面"]), zh: raw["主要画面"] || "" },
+    season: { ja: localizeText(raw["最佳季节/时间"]), zh: raw["最佳季节/时间"] || "" },
+    lens: { ja: localizeText(raw["建议镜头"]), zh: raw["建议镜头"] || "" },
+    time: { ja: timeJa, zh: ZH_META_LABELS[timeJa] || raw["预计耗时"] || timeJa },
+    traffic: { rank: raw["交通级别"], ja: trafficJa, zh: ZH_META_LABELS[trafficJa] || `${raw["交通级别"]}级` },
+    grade: raw["候选等级"],
+    score: Number(raw["总分100"] || 0),
+    niche: raw["小众/可发挥参考"],
+  };
+}
 
 function loadTableColumns() {
   try {
@@ -183,6 +388,43 @@ function loadTableColumns() {
 
 function saveTableColumns() {
   localStorage.setItem("photoSpotTableColumns", JSON.stringify(tableColumns.map(({ id, width }) => ({ id, width }))));
+}
+
+function t(key, replacements = {}) {
+  const template = UI_TEXT[state.lang]?.[key] || UI_TEXT.ja[key] || key;
+  return Object.entries(replacements).reduce((text, [name, value]) => text.replaceAll(`{${name}}`, value), template);
+}
+
+function applyStaticLanguage() {
+  document.documentElement.lang = state.lang === "zh" ? "zh-Hans" : "ja";
+  document.title = t("app.title");
+  document.querySelectorAll("[data-i18n]").forEach((node) => {
+    node.textContent = t(node.dataset.i18n);
+  });
+  document.querySelectorAll("[data-i18n-attr]").forEach((node) => {
+    node.dataset.i18nAttr.split(";").forEach((pair) => {
+      const [attr, key] = pair.split(":").map((part) => part.trim());
+      if (attr && key) node.setAttribute(attr, t(key));
+    });
+  });
+  el.langJa.classList.toggle("active", state.lang === "ja");
+  el.langZh.classList.toggle("active", state.lang === "zh");
+}
+
+function localized(value) {
+  if (value && typeof value === "object" && ("ja" in value || "zh" in value)) {
+    return value[state.lang] || value.ja || value.zh || "";
+  }
+  if (state.lang === "zh") return ZH_META_LABELS[value] || value;
+  return value;
+}
+
+function metaLabel(value) {
+  return state.lang === "zh" ? ZH_META_LABELS[value] || value : value;
+}
+
+function columnLabel(column) {
+  return t(column.labelKey);
 }
 
 function localizeSpotName(name) {
@@ -485,6 +727,12 @@ function uniqueBy(key) {
   );
 }
 
+function uniqueByGetter(getter) {
+  return [...new Map(spots.map((spot) => [getter(spot), getter(spot)])).values()].filter(Boolean).sort((a, b) =>
+    String(a).localeCompare(String(b), "ja"),
+  );
+}
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -496,15 +744,23 @@ function escapeHtml(value) {
 
 function textOf(spot) {
   return [
-    spot.jpName,
-    spot.jpPref,
-    spot.jpArea,
-    spot.jpType,
-    spot.jpTypeDetail,
-    spot.jpVisual,
-    spot.jpSeason,
-    spot.jpLens,
-    spot["地点"],
+    spot.name.ja,
+    spot.name.zh,
+    spot.prefecture.ja,
+    spot.prefecture.zh,
+    spot.area.ja,
+    spot.area.zh,
+    spot.primaryType.ja,
+    spot.primaryType.zh,
+    spot.typeDetail.ja,
+    spot.typeDetail.zh,
+    spot.visual.ja,
+    spot.visual.zh,
+    spot.season.ja,
+    spot.season.zh,
+    spot.lens.ja,
+    spot.lens.zh,
+    spot.raw["地点"],
   ]
     .filter(Boolean)
     .join(" ")
@@ -512,21 +768,21 @@ function textOf(spot) {
 }
 
 function metaForSpot(spot) {
-  return PHOTO_META[String(spot.ID)] || {};
+  return PHOTO_META[spot.id] || {};
 }
 
 function japanRefsForSpot(spot) {
-  return JAPAN_PHOTO_REFS[String(spot.ID)] || [];
+  return JAPAN_PHOTO_REFS[spot.id] || [];
 }
 
 function locationForSpot(spot) {
-  return LOCATION_DATA.locations[String(spot.ID)] || null;
+  return LOCATION_DATA.locations[spot.id] || null;
 }
 
 function mapsUrlForSpot(spot) {
   const meta = metaForSpot(spot);
   if (meta.mapsUrl) return meta.mapsUrl;
-  const query = encodeURIComponent([spot.jpName, spot.jpArea, spot.jpPref, "日本"].filter(Boolean).join(" "));
+  const query = encodeURIComponent([spot.name.ja, spot.area.ja, spot.prefecture.ja, "日本"].filter(Boolean).join(" "));
   return `https://www.google.com/maps/search/?api=1&query=${query}`;
 }
 
@@ -542,26 +798,26 @@ function filteredSpots() {
   const query = state.search.trim().toLowerCase();
   return spots
     .filter((spot) => !query || textOf(spot).includes(query))
-    .filter((spot) => matchesSet(state.grade, spot["候选等级"]))
-    .filter((spot) => matchesSet(state.pref, spot.jpPref))
-    .filter((spot) => matchesSet(state.type, spot.jpType))
-    .filter((spot) => matchesSet(state.traffic, spot.jpTraffic))
-    .filter((spot) => matchesSet(state.time, spot.jpTime))
-    .filter((spot) => Number(spot["总分100"] || 0) >= state.minScore)
-    .filter((spot) => !state.savedOnly || saved.has(String(spot.ID)))
+    .filter((spot) => matchesSet(state.grade, spot.grade))
+    .filter((spot) => matchesSet(state.pref, spot.prefecture.ja))
+    .filter((spot) => matchesSet(state.type, spot.primaryType.ja))
+    .filter((spot) => matchesSet(state.traffic, spot.traffic.ja))
+    .filter((spot) => matchesSet(state.time, spot.time.ja))
+    .filter((spot) => spot.score >= state.minScore)
+    .filter((spot) => !state.savedOnly || saved.has(spot.id))
     .sort(sorter(state.sort));
 }
 
 function sorter(mode) {
-  const byScore = (a, b) => Number(b["总分100"]) - Number(a["总分100"]);
-  const byName = (a, b) => String(a.jpName).localeCompare(String(b.jpName), "ja");
-  if (mode === "score-asc") return (a, b) => Number(a["总分100"]) - Number(b["总分100"]);
+  const byScore = (a, b) => b.score - a.score;
+  const byName = (a, b) => String(a.name.ja).localeCompare(String(b.name.ja), "ja");
+  if (mode === "score-asc") return (a, b) => a.score - b.score;
   if (mode === "niche-desc") {
-    return (a, b) => Number(b["小众/可发挥参考"] || 0) - Number(a["小众/可发挥参考"] || 0) || byScore(a, b);
+    return (a, b) => Number(b.niche || 0) - Number(a.niche || 0) || byScore(a, b);
   }
   if (mode === "traffic") {
     const rank = { A: 1, B: 2, C: 3 };
-    return (a, b) => (rank[a["交通级别"]] || 9) - (rank[b["交通级别"]] || 9) || byScore(a, b);
+    return (a, b) => (rank[a.traffic.rank] || 9) - (rank[b.traffic.rank] || 9) || byScore(a, b);
   }
   if (mode === "name") return byName;
   return byScore;
@@ -592,14 +848,14 @@ function photoFigure(spot, size = "card") {
   const caption = imgSrc
     ? `${primaryRef ? `${primaryRef.name}優先 / ` : ""}${meta.photoSource || "写真"}`
     : primaryRef
-      ? `${primaryRef.name}で作例確認`
-      : "写真未設定";
+      ? t("photo.checkOnSite", { site: primaryRef.name })
+      : t("photo.unset");
   if (!imgSrc) {
     return `
       <figure class="${size === "best" ? "best-photo" : "spot-photo"} photo-empty">
         <div>
-          <strong>${escapeHtml(spot.jpName)}</strong>
-          <span>作例リンクから確認</span>
+          <strong>${escapeHtml(localized(spot.name))}</strong>
+          <span>${escapeHtml(t("photo.checkLinks"))}</span>
         </div>
         <figcaption>${escapeHtml(caption)}</figcaption>
       </figure>
@@ -607,7 +863,7 @@ function photoFigure(spot, size = "card") {
   }
   return `
     <figure class="${size === "best" ? "best-photo" : "spot-photo"}">
-      <img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(spot.jpName)}の写真" loading="lazy" />
+      <img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(localized(spot.name))}の写真" loading="lazy" />
       <figcaption>${escapeHtml(caption)}</figcaption>
     </figure>
   `;
@@ -615,42 +871,42 @@ function photoFigure(spot, size = "card") {
 
 function renderCards(list) {
   if (!list.length) {
-    el.cards.innerHTML = `<div class="panel empty">条件に合う撮影地がありません。</div>`;
+    el.cards.innerHTML = `<div class="panel empty">${escapeHtml(t("empty.noResults"))}</div>`;
     return;
   }
   el.cards.innerHTML = list.map(cardTemplate).join("");
 }
 
 function cardTemplate(spot) {
-  const id = String(spot.ID);
-  const grade = String(spot["候选等级"] || "").toLowerCase();
+  const id = spot.id;
+  const grade = String(spot.grade || "").toLowerCase();
   return `
     <article class="spot-card">
       ${photoFigure(spot)}
       <div class="spot-head">
         <div class="spot-title">
-          <h3>${escapeHtml(spot.jpName)}</h3>
-          <p>${escapeHtml(spot.jpPref)} / ${escapeHtml(spot.jpArea)}</p>
+          <h3>${escapeHtml(localized(spot.name))}</h3>
+          <p>${escapeHtml(localized(spot.prefecture))} / ${escapeHtml(localized(spot.area))}</p>
         </div>
-        <button class="save-btn ${saved.has(id) ? "saved" : ""}" type="button" data-save="${id}" title="保存" aria-label="保存">★</button>
+        <button class="save-btn ${saved.has(id) ? "saved" : ""}" type="button" data-save="${id}" title="${escapeHtml(t("card.save"))}" aria-label="${escapeHtml(t("card.save"))}">★</button>
       </div>
       <div class="score-line">
-        <div class="score">${escapeHtml(spot["总分100"])}</div>
-        <div class="score-track"><div class="score-fill" style="--score:${Number(spot["总分100"] || 0)}%"></div></div>
-        <strong>${escapeHtml(spot["候选等级"])}</strong>
+        <div class="score">${escapeHtml(spot.score)}</div>
+        <div class="score-track"><div class="score-fill" style="--score:${spot.score}%"></div></div>
+        <strong>${escapeHtml(spot.grade)}</strong>
       </div>
       <div class="tag-row">
-        <span class="tag grade-${grade}">${escapeHtml(spot["候选等级"])}ランク</span>
-        <span class="tag">${escapeHtml(spot.jpTraffic)}</span>
-        <span class="tag">${escapeHtml(spot.jpTime)}</span>
-        <span class="tag">${escapeHtml(spot.jpType)}</span>
+        <span class="tag grade-${grade}">${escapeHtml(spot.grade)}${escapeHtml(t("common.rank"))}</span>
+        <span class="tag">${escapeHtml(localized(spot.traffic))}</span>
+        <span class="tag">${escapeHtml(localized(spot.time))}</span>
+        <span class="tag">${escapeHtml(localized(spot.primaryType))}</span>
       </div>
-      <p class="spot-desc">${escapeHtml(spot.jpVisual)}</p>
+      <p class="spot-desc">${escapeHtml(localized(spot.visual))}</p>
       <div class="meta-grid">
-        <div><span>おすすめ</span>${escapeHtml(spot.jpSeason)}</div>
-        <div><span>レンズ</span>${escapeHtml(spot.jpLens)}</div>
-        <div><span>カテゴリ詳細</span>${escapeHtml(spot.jpTypeDetail)}</div>
-        <div><span>穴場度</span>${escapeHtml(spot["小众/可发挥参考"] ?? "-")}</div>
+        <div><span>${escapeHtml(t("card.recommend"))}</span>${escapeHtml(localized(spot.season))}</div>
+        <div><span>${escapeHtml(t("card.lens"))}</span>${escapeHtml(localized(spot.lens))}</div>
+        <div><span>${escapeHtml(t("card.typeDetail"))}</span>${escapeHtml(localized(spot.typeDetail))}</div>
+        <div><span>${escapeHtml(t("card.niche"))}</span>${escapeHtml(spot.niche ?? "-")}</div>
       </div>
       <div class="score-breakdown">${scoreFields.map((field) => miniScore(spot, field)).join("")}</div>
       <div class="link-row">${linkButtons(spot)}</div>
@@ -667,8 +923,8 @@ function linkButtons(spot) {
           `<a class="source-link ${index === 0 ? "primary-photo-link" : ""}" href="${escapeHtml(ref.url)}" target="_blank" rel="noreferrer">${escapeHtml(ref.name)}</a>`,
       )
       .join("")}
-    <a class="source-link map-link" href="${escapeHtml(mapsUrlForSpot(spot))}" target="_blank" rel="noreferrer">Google Maps</a>
-    ${metaForSpot(spot).photoPage ? `<a class="source-link" href="${escapeHtml(metaForSpot(spot).photoPage)}" target="_blank" rel="noreferrer">写真元</a>` : ""}
+    <a class="source-link map-link" href="${escapeHtml(mapsUrlForSpot(spot))}" target="_blank" rel="noreferrer">${escapeHtml(t("link.map"))}</a>
+    ${metaForSpot(spot).photoPage ? `<a class="source-link" href="${escapeHtml(metaForSpot(spot).photoPage)}" target="_blank" rel="noreferrer">${escapeHtml(t("link.photoSource"))}</a>` : ""}
   `;
 }
 
@@ -677,7 +933,7 @@ function miniScore(spot, [label, key, max]) {
   const pct = Math.max(0, Math.min(100, (value / max) * 100));
   return `
     <div class="mini-score">
-      <div>${label}<div class="mini-bar"><span style="--w:${pct}%"></span></div></div>
+      <div>${escapeHtml(localized(label))}<div class="mini-bar"><span style="--w:${pct}%"></span></div></div>
       <strong>${value}/${max}</strong>
     </div>
   `;
@@ -686,7 +942,7 @@ function miniScore(spot, [label, key, max]) {
 function renderTable(list) {
   renderTableHead();
   if (!list.length) {
-    el.tableBody.innerHTML = `<tr><td colspan="${tableColumns.length}" class="empty">条件に合う撮影地がありません。</td></tr>`;
+    el.tableBody.innerHTML = `<tr><td colspan="${tableColumns.length}" class="empty">${escapeHtml(t("empty.noResults"))}</td></tr>`;
     return;
   }
   el.tableBody.innerHTML = list
@@ -698,20 +954,20 @@ function tableCell(column, spot) {
   const meta = metaForSpot(spot);
   const imgSrc = meta.localImageUrl || meta.imageUrl;
   const cell = {
-    saved: `<button class="save-btn ${saved.has(String(spot.ID)) ? "saved" : ""}" type="button" data-save="${spot.ID}" title="保存" aria-label="保存">★</button>`,
+    saved: `<button class="save-btn ${saved.has(spot.id) ? "saved" : ""}" type="button" data-save="${spot.id}" title="${escapeHtml(t("card.save"))}" aria-label="${escapeHtml(t("card.save"))}">★</button>`,
     spot: `<div class="table-spot">${
       imgSrc ? `<img src="${escapeHtml(imgSrc)}" alt="" loading="lazy" />` : `<span class="table-photo-empty">No photo</span>`
-    }<div><strong>${escapeHtml(spot.jpName)}</strong><br><span class="muted">${escapeHtml(spot.jpVisual)}</span></div></div>`,
-    pref: escapeHtml(spot.jpPref),
-    area: escapeHtml(spot.jpArea),
-    type: escapeHtml(spot.jpType),
-    traffic: escapeHtml(spot.jpTraffic),
-    time: escapeHtml(spot.jpTime),
-    season: escapeHtml(spot.jpSeason),
-    lens: escapeHtml(spot.jpLens),
-    score: `<span class="score-cell">${escapeHtml(spot["总分100"])}</span>`,
-    niche: escapeHtml(spot["小众/可发挥参考"] ?? "-"),
-    source: `${japanRefsForSpot(spot)[0] ? `<a class="source-link" href="${escapeHtml(japanRefsForSpot(spot)[0].url)}" target="_blank" rel="noreferrer">${escapeHtml(japanRefsForSpot(spot)[0].name)}</a><br>` : ""}<a class="source-link" href="${escapeHtml(mapsUrlForSpot(spot))}" target="_blank" rel="noreferrer">地図</a>`,
+    }<div><strong>${escapeHtml(localized(spot.name))}</strong><br><span class="muted">${escapeHtml(localized(spot.visual))}</span></div></div>`,
+    pref: escapeHtml(localized(spot.prefecture)),
+    area: escapeHtml(localized(spot.area)),
+    type: escapeHtml(localized(spot.primaryType)),
+    traffic: escapeHtml(localized(spot.traffic)),
+    time: escapeHtml(localized(spot.time)),
+    season: escapeHtml(localized(spot.season)),
+    lens: escapeHtml(localized(spot.lens)),
+    score: `<span class="score-cell">${escapeHtml(spot.score)}</span>`,
+    niche: escapeHtml(spot.niche ?? "-"),
+    source: `${japanRefsForSpot(spot)[0] ? `<a class="source-link" href="${escapeHtml(japanRefsForSpot(spot)[0].url)}" target="_blank" rel="noreferrer">${escapeHtml(japanRefsForSpot(spot)[0].name)}</a><br>` : ""}<a class="source-link" href="${escapeHtml(mapsUrlForSpot(spot))}" target="_blank" rel="noreferrer">${escapeHtml(t("link.mapShort"))}</a>`,
   };
   return `<td style="width:${column.width}px;min-width:${column.width}px;max-width:${column.width}px">${cell[column.id] || ""}</td>`;
 }
@@ -722,8 +978,8 @@ function renderMap(list) {
   const approximate = located.filter((item) => item.location.precision === "approximate").length;
   el.mapCount.textContent = located.length;
   el.mapPrecision.textContent = approximate
-    ? `${located.length - approximate}件は実座標/検索座標、${approximate}件は地域ベースの概略位置`
-    : "全件が実座標または検索座標です";
+    ? t("map.precisionApprox", { verified: located.length - approximate, approximate })
+    : t("map.precisionAll");
   el.mapFallback.classList.add("hidden");
 
   ensureMapProvider()
@@ -832,7 +1088,7 @@ function renderGoogleMap(located) {
     const marker = new google.maps.Marker({
       position,
       map: mapRuntime.map,
-      title: spot.jpName,
+      title: spot.name.ja,
       opacity: location.precision === "approximate" ? 0.55 : 1,
     });
     marker.addListener("click", () => {
@@ -848,19 +1104,19 @@ function renderGoogleMap(located) {
 function renderMapFallback(located) {
   el.mapFallback.classList.remove("hidden");
   el.mapFallback.innerHTML = `
-    <strong>地図ライブラリを読み込めませんでした。</strong>
-    <p>Google Maps のリンクから各地点を開けます。</p>
+    <strong>${escapeHtml(t("map.loadFailedTitle"))}</strong>
+    <p>${escapeHtml(t("map.loadFailedBody"))}</p>
     <div class="fallback-links">
       ${located
         .slice(0, 80)
-        .map(({ spot }) => `<a href="${escapeHtml(mapsUrlForSpot(spot))}" target="_blank" rel="noreferrer">${escapeHtml(spot.jpName)}</a>`)
+        .map(({ spot }) => `<a href="${escapeHtml(mapsUrlForSpot(spot))}" target="_blank" rel="noreferrer">${escapeHtml(localized(spot.name))}</a>`)
         .join("")}
     </div>
   `;
 }
 
 function markerColor(spot) {
-  const grade = spot["候选等级"];
+  const grade = spot.grade;
   if (grade === "S") return "#b9473f";
   if (grade === "A") return "#147c86";
   if (grade === "B") return "#315f9c";
@@ -870,15 +1126,15 @@ function markerColor(spot) {
 function mapPopupHtml(spot, location) {
   const meta = metaForSpot(spot);
   const imgSrc = meta.localImageUrl || meta.imageUrl;
-  const precision = location.precision === "approximate" ? "地域ベースの概略位置" : "実座標/検索座標";
+  const precision = location.precision === "approximate" ? t("map.precisionApproxLabel") : t("map.precisionVerifiedLabel");
   return `
     <div class="map-popup">
       ${imgSrc ? `<img src="${escapeHtml(imgSrc)}" alt="">` : ""}
-      <strong>${escapeHtml(spot.jpName)}</strong>
-      <span>${escapeHtml(spot.jpPref)} / ${escapeHtml(spot.jpArea)}</span>
-      <span>${escapeHtml(spot.jpType)}・${escapeHtml(spot["候选等级"])}ランク・${escapeHtml(spot["总分100"])}点</span>
-      <span>位置精度: ${escapeHtml(precision)}</span>
-      <a href="${escapeHtml(mapsUrlForSpot(spot))}" target="_blank" rel="noreferrer">Google Mapsで開く</a>
+      <strong>${escapeHtml(localized(spot.name))}</strong>
+      <span>${escapeHtml(localized(spot.prefecture))} / ${escapeHtml(localized(spot.area))}</span>
+      <span>${escapeHtml(localized(spot.primaryType))}・${escapeHtml(spot.grade)}${escapeHtml(t("common.rank"))}・${escapeHtml(spot.score)}${escapeHtml(t("common.points"))}</span>
+      <span>${escapeHtml(t("map.precision"))}: ${escapeHtml(precision)}</span>
+      <a href="${escapeHtml(mapsUrlForSpot(spot))}" target="_blank" rel="noreferrer">${escapeHtml(t("map.open"))}</a>
     </div>
   `;
 }
@@ -888,7 +1144,7 @@ function renderTableHead() {
     .map(
       (column) => `
         <th draggable="true" data-column="${column.id}" style="width:${column.width}px;min-width:${column.width}px;max-width:${column.width}px">
-          <span class="drag-handle">⋮⋮</span>${escapeHtml(column.label)}
+          <span class="drag-handle">⋮⋮</span>${escapeHtml(columnLabel(column))}
           <span class="resize-handle" data-resize="${column.id}"></span>
         </th>
       `,
@@ -897,8 +1153,8 @@ function renderTableHead() {
 }
 
 function renderCharts(list) {
-  el.gradeChart.innerHTML = bars(countBy(list, (spot) => spot["候选等级"]), colorForGrade);
-  el.typeChart.innerHTML = bars(countBy(list, (spot) => spot.jpType).slice(0, 8), (_, index) =>
+  el.gradeChart.innerHTML = bars(countBy(list, (spot) => spot.grade), colorForGrade);
+  el.typeChart.innerHTML = bars(countBy(list, (spot) => spot.primaryType.ja).slice(0, 8), (_, index) =>
     ["#147c86", "#315f9c", "#b9473f", "#b7791f"][index % 4],
   );
 }
@@ -906,21 +1162,21 @@ function renderCharts(list) {
 function countBy(list, getter) {
   const counts = new Map();
   list.forEach((spot) => {
-    const value = getter(spot) || "未分類";
+    const value = getter(spot) || t("common.unclassified");
     counts.set(value, (counts.get(value) || 0) + 1);
   });
   return [...counts.entries()].sort((a, b) => b[1] - a[1]);
 }
 
 function bars(entries, colorFn) {
-  if (!entries.length) return `<p class="empty">データなし</p>`;
+  if (!entries.length) return `<p class="empty">${escapeHtml(t("empty.noData"))}</p>`;
   const max = Math.max(...entries.map((entry) => entry[1]));
   return entries
     .map(([name, value], index) => {
       const width = max ? Math.round((value / max) * 100) : 0;
       return `
         <div class="bar-row">
-          <span title="${escapeHtml(name)}">${escapeHtml(name)}</span>
+          <span title="${escapeHtml(metaLabel(name))}">${escapeHtml(metaLabel(name))}</span>
           <div class="bar-track"><div class="bar-fill" style="--w:${width}%; --bar:${colorFn(name, index)}"></div></div>
           <strong>${value}</strong>
         </div>
@@ -939,21 +1195,21 @@ function colorForGrade(grade) {
 function renderBest(list) {
   const best = list[0];
   if (!best) {
-    el.bestSpot.innerHTML = `<p class="empty">データなし</p>`;
+    el.bestSpot.innerHTML = `<p class="empty">${escapeHtml(t("empty.noData"))}</p>`;
     return;
   }
   el.bestSpot.innerHTML = `
     ${photoFigure(best, "best")}
-    <h3>${escapeHtml(best.jpName)}</h3>
-    <p class="spot-desc">${escapeHtml(best.jpVisual)}</p>
+    <h3>${escapeHtml(localized(best.name))}</h3>
+    <p class="spot-desc">${escapeHtml(localized(best.visual))}</p>
     <div class="score-line">
-      <div class="score">${escapeHtml(best["总分100"])}</div>
-      <div class="score-track"><div class="score-fill" style="--score:${Number(best["总分100"] || 0)}%"></div></div>
-      <strong>${escapeHtml(best["候选等级"])}</strong>
+      <div class="score">${escapeHtml(best.score)}</div>
+      <div class="score-track"><div class="score-fill" style="--score:${best.score}%"></div></div>
+      <strong>${escapeHtml(best.grade)}</strong>
     </div>
     <div class="tag-row">
-      <span class="tag">${escapeHtml(best.jpPref)}</span>
-      <span class="tag">${escapeHtml(best.jpType)}</span>
+      <span class="tag">${escapeHtml(localized(best.prefecture))}</span>
+      <span class="tag">${escapeHtml(localized(best.primaryType))}</span>
     </div>
     <div class="link-row">${linkButtons(best)}</div>
   `;
@@ -961,55 +1217,102 @@ function renderBest(list) {
 
 function renderScoringModel() {
   const labelMap = {
-    "交通分": "アクセス",
-    "画面强度": "画面力",
-    "题材密度": "題材密度",
-    "光线季节稳定": "光・季節安定",
-    "人流可控": "混雑耐性",
-    "器材适配": "機材適性",
-    "风险成本": "リスク・コスト",
+    ja: {
+      "交通分": "アクセス",
+      "画面强度": "画面力",
+      "题材密度": "題材密度",
+      "光线季节稳定": "光・季節安定",
+      "人流可控": "混雑耐性",
+      "器材适配": "機材適性",
+      "风险成本": "リスク・コスト",
+    },
+    zh: {
+      "交通分": "交通",
+      "画面强度": "画面强度",
+      "题材密度": "题材密度",
+      "光线季节稳定": "光线・季节稳定",
+      "人流可控": "人流可控",
+      "器材适配": "器材适配",
+      "风险成本": "风险・成本",
+    },
   };
   const scoringCopy = {
-    "交通分": {
-      definition: "東京発での所要時間と乗り換え負担",
-      principle: "A=20、B=15、C=9。Cは除外ではなく、画面の強さで取り返す枠。",
+    ja: {
+      "交通分": {
+        definition: "東京発での所要時間と乗り換え負担",
+        principle: "A=20、B=15、C=9。Cは除外ではなく、画面の強さで取り返す枠。",
+      },
+      "画面强度": {
+        definition: "現地で一枚にまとめたときの画の強さ",
+        principle: "海岸、山頂、工場夜景、渓谷は高め。日常的な街歩きや公園は控えめ。",
+      },
+      "题材密度": {
+        definition: "同じ撮影地で拾える被写体の多さ",
+        principle: "海、富士山、鳥居、灯台、街並みなどを一度に組める場所を高評価。",
+      },
+      "光线季节稳定": {
+        definition: "短い旬だけに依存しない撮りやすさ",
+        principle: "通年、ブルーアワー、雨の日でも成立する場所を高めに評価。",
+      },
+      "人流可控": {
+        definition: "人を避けやすく、構図を変えやすいか",
+        principle: "有名すぎる定番地は控えめ。開けた海岸、工業地帯、湿地は高め。",
+      },
+      "器材适配": {
+        definition: "a7R V / GFX100S と手持ちレンズとの相性",
+        principle: "24-70、70-200、100-400、広角が素直に効く場所を高評価。",
+      },
+      "风险成本": {
+        definition: "潮位、開園日、船便、山道、費用などの不確定要素",
+        principle: "都市部は高め。船、潮、山道、長距離移動が絡む場所は低め。",
+      },
+      "总分": {
+        definition: "各項目の合計点",
+        principle: "S>=86、A>=78、B>=68、C<68。",
+      },
     },
-    "画面强度": {
-      definition: "現地で一枚にまとめたときの画の強さ",
-      principle: "海岸、山頂、工場夜景、渓谷は高め。日常的な街歩きや公園は控えめ。",
-    },
-    "题材密度": {
-      definition: "同じ撮影地で拾える被写体の多さ",
-      principle: "海、富士山、鳥居、灯台、街並みなどを一度に組める場所を高評価。",
-    },
-    "光线季节稳定": {
-      definition: "短い旬だけに依存しない撮りやすさ",
-      principle: "通年、ブルーアワー、雨の日でも成立する場所を高めに評価。",
-    },
-    "人流可控": {
-      definition: "人を避けやすく、構図を変えやすいか",
-      principle: "有名すぎる定番地は控えめ。開けた海岸、工業地帯、湿地は高め。",
-    },
-    "器材适配": {
-      definition: "a7R V / GFX100S と手持ちレンズとの相性",
-      principle: "24-70、70-200、100-400、広角が素直に効く場所を高評価。",
-    },
-    "风险成本": {
-      definition: "潮位、開園日、船便、山道、費用などの不確定要素",
-      principle: "都市部は高め。船、潮、山道、長距離移動が絡む場所は低め。",
-    },
-    "总分": {
-      definition: "各項目の合計点",
-      principle: "S>=86、A>=78、B>=68、C<68。",
+    zh: {
+      "交通分": {
+        definition: "从东京出发的耗时和换乘负担",
+        principle: "A=20、B=15、C=9。C 不是排除项，而是交给画面强度补回来。",
+      },
+      "画面强度": {
+        definition: "现场能否收束成一张有力量的照片",
+        principle: "海岸、山顶、工厂夜景、溪谷偏高；日常街拍和公园偏克制。",
+      },
+      "题材密度": {
+        definition: "同一摄影地内可以拾取的被摄体数量",
+        principle: "海、富士山、鸟居、灯塔、街景等能组合在一起的地点评价更高。",
+      },
+      "光线季节稳定": {
+        definition: "不依赖极短季节窗口的可拍性",
+        principle: "全年、蓝调时刻、雨天也成立的地点评价更高。",
+      },
+      "人流可控": {
+        definition: "是否容易避开人流并调整构图",
+        principle: "过于定番的名所会稍低；开阔海岸、工业地带、湿地偏高。",
+      },
+      "器材适配": {
+        definition: "与 a7R V / GFX100S 和现有镜头的匹配度",
+        principle: "24-70、70-200、100-400、广角能自然发挥的地点评价更高。",
+      },
+      "风险成本": {
+        definition: "潮位、开园日、船班、山路、费用等不确定因素",
+        principle: "都市部偏高；船、潮、山路、长距离移动相关地点偏低。",
+      },
+      "总分": {
+        definition: "各项目合计分",
+        principle: "S>=86、A>=78、B>=68、C<68。",
+      },
     },
   };
   el.scoringModel.innerHTML = DATA.scoringModel
     .map(
       (row) => `
         <div class="score-rule">
-          <strong><span>${escapeHtml(labelMap[row["字段"]] || localizeText(row["字段"]))}</span><span>${escapeHtml(row["满分"])}点</span></strong>
-          <p>${escapeHtml(scoringCopy[row["字段"]]?.definition || localizeText(row["定义"]))}</p>
-          <p>${escapeHtml(scoringCopy[row["字段"]]?.principle || localizeText(row["评分原则"]))}</p>
+          <strong><span>${escapeHtml(labelMap[state.lang][row["字段"]] || labelMap.ja[row["字段"]] || localizeText(row["字段"]))}</span><span>${escapeHtml(row["满分"])}${escapeHtml(t("common.points"))}</span></strong>
+          <p>${escapeHtml(scoringCopy[state.lang][row["字段"]]?.definition || scoringCopy.ja[row["字段"]]?.definition || localizeText(row["定义"]))}</p>
+          <p>${escapeHtml(scoringCopy[state.lang][row["字段"]]?.principle || scoringCopy.ja[row["字段"]]?.principle || localizeText(row["评分原则"]))}</p>
         </div>
       `,
     )
@@ -1024,7 +1327,7 @@ function renderPhotoSites() {
       (site) => `
         <a class="photo-site-row" href="${escapeHtml(site.url)}" target="_blank" rel="noreferrer">
           <strong>${escapeHtml(site.name)}</strong>
-          <span>${escapeHtml(site.role)}</span>
+          <span>${escapeHtml(localized(site.role))}</span>
         </a>
       `,
     )
@@ -1037,7 +1340,7 @@ function fillMultiFilter(container, values, selectedSet) {
       (value) => `
         <label class="filter-chip">
           <input type="checkbox" value="${escapeHtml(value)}" ${selectedSet.has(value) ? "checked" : ""}>
-          <span>${escapeHtml(value)}</span>
+          <span>${escapeHtml(metaLabel(value))}</span>
         </label>
       `,
     )
@@ -1045,11 +1348,11 @@ function fillMultiFilter(container, values, selectedSet) {
 }
 
 function syncFilters() {
-  fillMultiFilter(el.gradeFilter, uniqueBy("候选等级"), state.grade);
-  fillMultiFilter(el.prefFilter, uniqueBy("jpPref"), state.pref);
-  fillMultiFilter(el.typeFilter, uniqueBy("jpType"), state.type);
-  fillMultiFilter(el.trafficFilter, uniqueBy("jpTraffic"), state.traffic);
-  fillMultiFilter(el.timeFilter, uniqueBy("jpTime"), state.time);
+  fillMultiFilter(el.gradeFilter, uniqueByGetter((spot) => spot.grade), state.grade);
+  fillMultiFilter(el.prefFilter, uniqueByGetter((spot) => spot.prefecture.ja), state.pref);
+  fillMultiFilter(el.typeFilter, uniqueByGetter((spot) => spot.primaryType.ja), state.type);
+  fillMultiFilter(el.trafficFilter, uniqueByGetter((spot) => spot.traffic.ja), state.traffic);
+  fillMultiFilter(el.timeFilter, uniqueByGetter((spot) => spot.time.ja), state.time);
 }
 
 function updateSaved(id) {
@@ -1099,6 +1402,8 @@ function bindMultiFilter(container, selectedSet) {
 }
 
 function bindEvents() {
+  el.langJa.addEventListener("click", () => setLanguage("ja"));
+  el.langZh.addEventListener("click", () => setLanguage("zh"));
   el.searchInput.addEventListener("input", (event) => {
     state.search = event.target.value;
     render();
@@ -1130,6 +1435,17 @@ function bindEvents() {
     if (saveButton) updateSaved(saveButton.dataset.save);
   });
   bindTableInteractions();
+}
+
+function setLanguage(lang) {
+  if (!UI_TEXT[lang] || state.lang === lang) return;
+  state.lang = lang;
+  localStorage.setItem("photoSpotLang", lang);
+  applyStaticLanguage();
+  renderScoringModel();
+  renderPhotoSites();
+  syncControls();
+  render();
 }
 
 function bindTableInteractions() {
@@ -1187,8 +1503,9 @@ function setView(view) {
 }
 
 function init() {
+  applyStaticLanguage();
   el.totalCount.textContent = spots.length;
-  el.avgScore.textContent = Math.round(spots.reduce((sum, spot) => sum + Number(spot["总分100"] || 0), 0) / spots.length);
+  el.avgScore.textContent = Math.round(spots.reduce((sum, spot) => sum + spot.score, 0) / spots.length);
   renderScoringModel();
   renderPhotoSites();
   syncControls();

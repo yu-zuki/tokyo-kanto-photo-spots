@@ -10,74 +10,78 @@
     <header class="app-header">
       <div>
         <p class="eyebrow">Tokyo / Kanto Field Notes</p>
-        <h1>東京・関東 撮影地ノート</h1>
+        <h1 data-i18n="app.title">東京・関東 撮影地ノート</h1>
+      </div>
+      <div class="language-toggle" role="group" aria-label="Language">
+        <button class="active" id="langJa" type="button" data-lang="ja">日本語</button>
+        <button id="langZh" type="button" data-lang="zh">中文</button>
       </div>
       <div class="header-stats" aria-label="データ概要">
-        <div><strong id="totalCount">260</strong><span>候補地</span></div>
-        <div><strong id="avgScore">-</strong><span>平均点</span></div>
-        <div><strong id="savedCount">0</strong><span>保存済み</span></div>
+        <div><strong id="totalCount">0</strong><span data-i18n="stats.total">候補地</span></div>
+        <div><strong id="avgScore">-</strong><span data-i18n="stats.avg">平均点</span></div>
+        <div><strong id="savedCount">0</strong><span data-i18n="stats.saved">保存済み</span></div>
       </div>
     </header>
 
     <main class="layout">
-      <aside class="sidebar" aria-label="絞り込み条件">
+      <aside class="sidebar" aria-label="絞り込み条件" data-i18n-attr="aria-label:filters.aria">
         <section class="panel controls">
           <div class="panel-title">
-            <h2>絞り込み</h2>
-            <button class="icon-button" id="resetFilters" type="button" title="絞り込みをリセット" aria-label="絞り込みをリセット">↺</button>
+            <h2 data-i18n="filters.title">絞り込み</h2>
+            <button class="icon-button" id="resetFilters" type="button" title="絞り込みをリセット" aria-label="絞り込みをリセット" data-i18n-attr="title:filters.reset;aria-label:filters.reset">↺</button>
           </div>
 
           <label class="search-box">
-            <span>検索</span>
-            <input id="searchInput" type="search" placeholder="撮影地、エリア、被写体、レンズ..." autocomplete="off" />
+            <span data-i18n="filters.search">検索</span>
+            <input id="searchInput" type="search" placeholder="撮影地、エリア、被写体、レンズ..." autocomplete="off" data-i18n-attr="placeholder:filters.searchPlaceholder" />
           </label>
 
           <div class="filter-group">
-            <span>候補ランク</span>
+            <span data-i18n="filters.grade">候補ランク</span>
             <div id="gradeFilter" class="multi-filter"></div>
           </div>
 
           <div class="filter-group">
-            <span>都県</span>
+            <span data-i18n="filters.pref">都県</span>
             <div id="prefFilter" class="multi-filter"></div>
           </div>
 
           <div class="filter-group">
-            <span>カテゴリ</span>
+            <span data-i18n="filters.type">カテゴリ</span>
             <div id="typeFilter" class="multi-filter"></div>
           </div>
 
           <div class="filter-group">
-            <span>アクセス</span>
+            <span data-i18n="filters.access">アクセス</span>
             <div id="trafficFilter" class="multi-filter"></div>
           </div>
 
           <div class="filter-group">
-            <span>移動時間</span>
+            <span data-i18n="filters.time">移動時間</span>
             <div id="timeFilter" class="multi-filter"></div>
           </div>
 
           <label>
-            <span>最低スコア <b id="minScoreValue">0</b></span>
+            <span><span data-i18n="filters.minScore">最低スコア</span> <b id="minScoreValue">0</b></span>
             <input id="minScore" type="range" min="0" max="100" value="0" />
           </label>
 
           <label class="check-row">
             <input id="savedOnly" type="checkbox" />
-            <span>保存済みのみ</span>
+            <span data-i18n="filters.savedOnly">保存済みのみ</span>
           </label>
         </section>
 
         <section class="panel">
           <div class="panel-title">
-            <h2>日本の写真サイト</h2>
+            <h2 data-i18n="sections.photoSites">日本の写真サイト</h2>
           </div>
           <div id="photoSites" class="photo-site-list"></div>
         </section>
 
         <section class="panel">
           <div class="panel-title">
-            <h2>採点モデル</h2>
+            <h2 data-i18n="sections.scoring">採点モデル</h2>
           </div>
           <div id="scoringModel" class="scoring-list"></div>
         </section>
@@ -86,39 +90,39 @@
       <section class="content">
         <section class="toolbar">
           <div>
-            <p class="muted">表示中</p>
-            <h2><span id="resultCount">0</span> 件</h2>
+            <p class="muted" data-i18n="toolbar.showing">表示中</p>
+            <h2><span id="resultCount">0</span> <span data-i18n="toolbar.countSuffix">件</span></h2>
           </div>
           <div class="toolbar-actions">
             <label>
-              <span>並び順</span>
+              <span data-i18n="toolbar.sort">並び順</span>
               <select id="sortSelect">
-                <option value="score-desc">スコアが高い順</option>
-                <option value="score-asc">スコアが低い順</option>
-                <option value="niche-desc">穴場度が高い順</option>
-                <option value="traffic">アクセス優先</option>
-                <option value="name">撮影地名</option>
+                <option value="score-desc" data-i18n="sort.scoreDesc">スコアが高い順</option>
+                <option value="score-asc" data-i18n="sort.scoreAsc">スコアが低い順</option>
+                <option value="niche-desc" data-i18n="sort.nicheDesc">穴場度が高い順</option>
+                <option value="traffic" data-i18n="sort.traffic">アクセス優先</option>
+                <option value="name" data-i18n="sort.name">撮影地名</option>
               </select>
             </label>
             <div class="view-toggle" role="group" aria-label="表示切替">
-              <button class="active" id="cardViewBtn" type="button">カード</button>
-              <button id="tableViewBtn" type="button">表</button>
-              <button id="mapViewBtn" type="button">地図</button>
+              <button class="active" id="cardViewBtn" type="button" data-i18n="views.cards">カード</button>
+              <button id="tableViewBtn" type="button" data-i18n="views.table">表</button>
+              <button id="mapViewBtn" type="button" data-i18n="views.map">地図</button>
             </div>
           </div>
         </section>
 
         <section class="summary-grid" aria-label="結果サマリー">
           <div class="panel">
-            <h2>ランク分布</h2>
+            <h2 data-i18n="sections.gradeChart">ランク分布</h2>
             <div id="gradeChart" class="bar-chart"></div>
           </div>
           <div class="panel">
-            <h2>カテゴリ概要</h2>
+            <h2 data-i18n="sections.typeChart">カテゴリ概要</h2>
             <div id="typeChart" class="bar-chart compact"></div>
           </div>
           <div class="panel highlight">
-            <h2>最高スコア</h2>
+            <h2 data-i18n="sections.best">最高スコア</h2>
             <div id="bestSpot"></div>
           </div>
         </section>
@@ -135,8 +139,8 @@
         <section id="mapWrap" class="map-wrap hidden" aria-live="polite">
           <div class="map-head">
             <div>
-              <p class="muted">位置一覧</p>
-              <h2><span id="mapCount">0</span> 件を表示</h2>
+              <p class="muted" data-i18n="map.title">位置一覧</p>
+              <h2><span id="mapCount">0</span> <span data-i18n="map.countSuffix">件を表示</span></h2>
             </div>
             <p id="mapPrecision" class="map-note"></p>
           </div>

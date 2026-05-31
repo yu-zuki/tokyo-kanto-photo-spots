@@ -68,6 +68,8 @@ const UI_TEXT = {
     "common.unclassified": "未分類",
     "filters.seasonNow": "今が見頃のみ",
     "filters.weatherMatch": "天気に合う場所のみ",
+    "filters.home": "出発地",
+    "filters.homeNone": "設定しない",
     "sections.weather": "週末の天気",
     "weather.loading": "読み込み中...",
     "weather.error": "取得できませんでした",
@@ -147,6 +149,8 @@ const UI_TEXT = {
     "common.unclassified": "未分类",
     "filters.seasonNow": "仅看当季推荐",
     "filters.weatherMatch": "只看天气合适的地点",
+    "filters.home": "出发地",
+    "filters.homeNone": "不设置",
     "sections.weather": "周末天气",
     "weather.loading": "加载中...",
     "weather.error": "获取失败",
@@ -332,6 +336,7 @@ const state = {
   seasonNow: false,
   weatherMatch: false,
   comfortTemp: Number(localStorage.getItem("photoSpotComfortTemp")) || 26,
+  homePref: localStorage.getItem("photoSpotHomePref") || "",
   sort: "score-desc",
   view: "cards",
 };
@@ -388,6 +393,7 @@ const el = {
   expandAllScores: document.querySelector("#expandAllScores"),
   collapseAllScores: document.querySelector("#collapseAllScores"),
   scoreToggleGroup: document.querySelector("#scoreToggleGroup"),
+  homePref: document.querySelector("#homePref"),
 };
 
 const spots = rawSpots.map(normalizeSpot);
@@ -1093,6 +1099,7 @@ function cardTemplate(spot) {
         <span class="tag">${escapeHtml(localized(spot.traffic))}</span>
         <span class="tag">${escapeHtml(localized(spot.time))}</span>
         <span class="tag">${escapeHtml(localized(spot.primaryType))}</span>
+        ${travelTimeStr(spot) ? `<span class="tag travel-tag">${escapeHtml(travelTimeStr(spot))}</span>` : ""}
       </div>
       <p class="spot-desc">${escapeHtml(localized(spot.visual))}</p>
       <div class="meta-grid">
@@ -1586,6 +1593,7 @@ function syncControls() {
   if (el.weatherMatch) el.weatherMatch.checked = state.weatherMatch;
   if (el.comfortTemp) el.comfortTemp.value = state.comfortTemp;
   if (el.comfortValue) el.comfortValue.textContent = state.comfortTemp;
+  if (el.homePref) el.homePref.value = state.homePref;
   el.sortSelect.value = state.sort;
   syncFilters();
 }
@@ -1633,6 +1641,14 @@ function bindEvents() {
   if (el.weatherMatch) {
     el.weatherMatch.addEventListener("change", (event) => {
       state.weatherMatch = event.target.checked;
+      render();
+    });
+  }
+  if (el.homePref) {
+    el.homePref.value = state.homePref;
+    el.homePref.addEventListener("change", () => {
+      state.homePref = el.homePref.value;
+      localStorage.setItem("photoSpotHomePref", state.homePref);
       render();
     });
   }
@@ -1793,7 +1809,7 @@ async function fetchWeather() {
   const prefKeys = Object.keys(PREF_CENTERS);
 
   try {
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${latStr}&longitude=${lonStr}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia/Tokyo&forecast_days=3`;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${latStr}&longitude=${lonStr}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset&timezone=Asia/Tokyo&forecast_days=3`;
     const resp = await fetch(url);
     if (!resp.ok) throw new Error("API error");
     const data = await resp.json();
@@ -1807,6 +1823,8 @@ async function fetchWeather() {
         low: data[i]?.daily?.temperature_2m_min || [],
         rain: data[i]?.daily?.precipitation_probability_max || [],
         code: data[i]?.daily?.weather_code || [],
+        sunrise: data[i]?.daily?.sunrise || [],
+        sunset: data[i]?.daily?.sunset || [],
       };
       forecasts[prefKeys[i]] = daily;
     }
@@ -1880,6 +1898,14 @@ function renderWeather() {
       </div>`;
     }
     html += `</div></div>`;
+  }
+
+  // Sunrise/sunset for Tokyo (first prefecture)
+  const tokyoFc = forecasts["東京都"];
+  if (tokyoFc && tokyoFc.sunrise && tokyoFc.sunrise.length > 0) {
+    const sr = tokyoFc.sunrise[0].slice(11, 16); // "2026-05-31T04:27" → "04:27"
+    const ss = tokyoFc.sunset[0].slice(11, 16);
+    html += `<p class="weather-sun">☀️ ${sr} ↑ / ${ss} ↓</p>`;
   }
 
   const ago = Math.round((Date.now() - updated) / 60000);
@@ -1976,6 +2002,31 @@ function seasonBadge(spot) {
   if (spot.seasonMonths.length === 0) return "";
   const inSeason = isSpotInSeasonNow(spot);
   return `<span class="season-badge ${inSeason ? "in-season" : ""}">${inSeason ? "今が見頃" : ""}</span>`;
+}
+
+// Rough travel time (minutes) between prefectures (by train/car, one-way)
+const TRAVEL_TIME = {
+  "東京都": { "東京都": 0, "神奈川県": 40, "千葉県": 50, "埼玉県": 40, "茨城県": 80, "栃木県": 90, "群馬県": 100, "山梨県": 110, "静岡県": 100 },
+  "神奈川県": { "東京都": 40, "神奈川県": 0, "千葉県": 70, "埼玉県": 60, "茨城県": 100, "栃木県": 110, "群馬県": 120, "山梨県": 80, "静岡県": 80 },
+  "千葉県": { "東京都": 50, "神奈川県": 70, "千葉県": 0, "埼玉県": 70, "茨城県": 80, "栃木県": 100, "群馬県": 110, "山梨県": 130, "静岡県": 130 },
+  "埼玉県": { "東京都": 40, "神奈川県": 60, "千葉県": 70, "埼玉県": 0, "茨城県": 60, "栃木県": 50, "群馬県": 60, "山梨県": 100, "静岡県": 120 },
+  "茨城県": { "東京都": 80, "神奈川県": 100, "千葉県": 80, "埼玉県": 60, "茨城県": 0, "栃木県": 60, "群馬県": 80, "山梨県": 130, "静岡県": 150 },
+  "栃木県": { "東京都": 90, "神奈川県": 110, "千葉県": 100, "埼玉県": 50, "茨城県": 60, "栃木県": 0, "群馬県": 60, "山梨県": 130, "静岡県": 160 },
+  "群馬県": { "東京都": 100, "神奈川県": 120, "千葉県": 110, "埼玉県": 60, "茨城県": 80, "栃木県": 60, "群馬県": 0, "山梨県": 120, "静岡県": 160 },
+  "山梨県": { "東京都": 110, "神奈川県": 80, "千葉県": 130, "埼玉県": 100, "茨城県": 130, "栃木県": 130, "群馬県": 120, "山梨県": 0, "静岡県": 70 },
+  "静岡県": { "東京都": 100, "神奈川県": 80, "千葉県": 130, "埼玉県": 120, "茨城県": 150, "栃木県": 160, "群馬県": 160, "山梨県": 70, "静岡県": 0 },
+};
+
+function travelTimeStr(spot) {
+  if (!state.homePref) return "";
+  const from = state.homePref;
+  const to = spot.prefecture.ja;
+  const mins = TRAVEL_TIME[from]?.[to];
+  if (mins == null) return "";
+  if (mins === 0) return "🚃 圏内";
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return `🚃 約${h ? h + "時間" : ""}${m ? m + "分" : ""}`;
 }
 
 function init() {

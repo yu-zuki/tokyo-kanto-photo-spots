@@ -1083,6 +1083,39 @@ td.score-cell {
   margin-top: 0.25rem;
 }
 
+.home-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.35rem;
+  margin-top: 0.25rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.82rem;
+  color: var(--ink);
+}
+
+.home-row select {
+  padding: 0.25rem 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 0.78rem;
+}
+
+.travel-tag {
+  background: var(--teal-soft);
+  color: var(--teal);
+}
+
+.weather-sun {
+  font-size: 0.72rem;
+  color: var(--amber);
+  text-align: center;
+  margin: 0.3rem 0 0;
+}
+
 /* ---- Memo ---- */
 .memo-wrap {
   display: flex;

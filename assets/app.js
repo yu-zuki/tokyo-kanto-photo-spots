@@ -426,6 +426,7 @@ const el = {
   homePref: document.querySelector("#homePref"),
   tripContent: document.querySelector("#tripContent"),
   clearTrip: document.querySelector("#clearTrip"),
+  tripPanel: document.querySelector("#tripPanel"),
   photoModuleBtn: document.querySelector("#photoModuleBtn"),
   travelModuleBtn: document.querySelector("#travelModuleBtn"),
 };
@@ -1028,19 +1029,32 @@ function render() {
   el.savedCount.textContent = saved.size;
   el.totalCount.textContent = isTravel ? travelSpots.length : spots.length;
   if (!isTravel) { renderCharts(list); renderBest(list); renderTripPanel(); }
-  else { renderCharts([]); renderBest([]); }
-  el.dashboardView.classList.toggle("hidden", state.view !== "dashboard");
+  else {
+    // Travel: hide photo-specific panels
+    if (el.gradeChart) el.gradeChart.innerHTML = "";
+    if (el.typeChart) el.typeChart.innerHTML = "";
+    if (el.bestSpot) el.bestSpot.innerHTML = "";
+    if (el.tripPanel) el.tripPanel.classList.add("hidden");
+  }
+  el.dashboardView.classList.toggle("hidden", state.view !== "dashboard" || isTravel);
   el.cards.classList.toggle("hidden", state.view !== "cards");
   el.tableWrap.classList.toggle("hidden", state.view !== "table");
   el.mapWrap.classList.toggle("hidden", state.view !== "map");
   el.tripView.classList.toggle("hidden", state.view !== "trip");
+  // Hide score toggle group in travel mode
+  el.scoreToggleGroup.classList.toggle("hidden", isTravel || state.view !== "cards");
   if (state.view === "cards") {
     if (isTravel) { renderTravelCards(list); }
     else { renderCards(list); }
   } else if (state.view === "table") {
-    renderTable(list);
+    if (isTravel) { renderTravelTable(list); }
+    else { renderTable(list); }
   } else if (state.view === "map") {
-    renderMap(list);
+    if (isTravel) { renderTravelMap(list); }
+    else { renderMap(list); }
+  } else if (state.view === "trip") {
+    // Trip view: photo shows trip panel, travel shows simple list
+    if (!isTravel) { /* trip panel is in sidebar */ }
   }
 }
 
@@ -1078,6 +1092,56 @@ function renderTravelCards(list) {
     return;
   }
   el.cards.innerHTML = list.map(travelCardTemplate).join("");
+}
+
+function renderTravelTable(list) {
+  if (!list.length) {
+    el.tableBody.innerHTML = `<tr><td colspan="6" class="empty">${escapeHtml(t("empty.noResults"))}</td></tr>`;
+    return;
+  }
+  el.tableBody.innerHTML = list.map(s => `<tr>
+    <td><strong>${escapeHtml(localized(s.name))}</strong><br><span class="muted">${escapeHtml(localized(s.prefecture))}</span></td>
+    <td>${escapeHtml(localized(s.primaryType))}</td>
+    <td>${s.crowdLevel==='low'?'🟢':s.crowdLevel==='medium'?'🟡':s.crowdLevel==='high'?'🟠':'🔴'} ${s.crowdLevel}</td>
+    <td>${s.trip_style==='day_trip'?'日帰り':s.trip_style==='weekend'?'週末':'宿泊'}</td>
+    <td>${s.grade} / ${s.score}pt</td>
+    <td>${s.access_minutes||'-'}分</td>
+  </tr>`).join("");
+  // Minimal table head
+  el.tableHead.innerHTML = `<tr><th>名称</th><th>ｶﾃｺﾞﾘ</th><th>混雑</th><th>日帰/週末</th><th>ｽｺｱ</th><th>ｱｸｾｽ</th></tr>`;
+}
+
+function renderTravelMap(list) {
+  el.mapCount.textContent = list.length;
+  el.mapPrecision.textContent = "";
+  const located = list.map(s => ({
+    spot: s,
+    location: TRAVEL_LOCS.locations[s.id] || null
+  })).filter(x => x.location);
+
+  ensureMapProvider().then(provider => {
+    if (provider === "leaflet") {
+      if (!mapRuntime.map || mapRuntime.provider !== "leaflet") {
+        mapRuntime = { provider: "leaflet", map: window.L.map(el.mapCanvas, { scrollWheelZoom: true }), layer: null, markers: [] };
+      }
+      mapRuntime.markers.forEach(m => mapRuntime.map.removeLayer(m));
+      mapRuntime.markers = [];
+      const bounds = [];
+      located.forEach(({spot, location}) => {
+        const latlng = [location.lat, location.lng];
+        bounds.push(latlng);
+        const marker = window.L.circleMarker(latlng, {
+          radius: 7, fillOpacity: 0.8, weight: 1.5,
+          color: spot.crowdLevel === 'low' ? '#438767' : spot.crowdLevel === 'medium' ? '#efc85a' : '#bf5068',
+          fillColor: spot.crowdLevel === 'low' ? '#438767' : spot.crowdLevel === 'medium' ? '#efc85a' : '#bf5068',
+        }).addTo(mapRuntime.map);
+        marker.bindPopup(`<strong>${escapeHtml(localized(spot.name))}</strong><br>${spot.crowdLevel} · ${spot.grade}<br><a href="https://www.google.com/maps/search/${encodeURIComponent(spot.name.ja)}" target="_blank">Google Maps</a>`);
+        mapRuntime.markers.push(marker);
+      });
+      if (bounds.length) mapRuntime.map.fitBounds(bounds, {padding: [30,30]});
+    }
+    el.mapFallback.innerHTML = `<p>${escapeHtml(t("map.loadFailedTitle"))}</p><p>${escapeHtml(t("map.loadFailedBody"))}</p>`;
+  });
 }
 
 function renderCards(list) {
@@ -2287,6 +2351,9 @@ function travelCardTemplate(spot) {
 
 function init() {
   applyStaticLanguage();
+  // Sync module toggle buttons
+  el.photoModuleBtn.classList.toggle("active", state.activeModule === "photo");
+  el.travelModuleBtn.classList.toggle("active", state.activeModule === "travel");
   el.totalCount.textContent = spots.length;
   el.avgScore.textContent = Math.round(spots.reduce((sum, spot) => sum + spot.score, 0) / spots.length);
   renderScoringModel();

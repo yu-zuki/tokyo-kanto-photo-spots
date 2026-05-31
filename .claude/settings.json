@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Read\rEdit\rWrite\rMultiEdit\rGlob\rGrep\rLS\rWebFetch\rBash(git *\\)\rBash\\(ls *\\)\rBash\\(find *\\)\rBash\\(cat *\\)\rBash\\(mkdir *\\)\rBash\\(cp *\\)\rBash\\(mv *\\)\rBash\\(python3 *\\)\rBash\\(node *\\)\rBash\\(npm *)",
-      "Bash",
-      "Bash(gh *)"
-    ]
-  }
-}

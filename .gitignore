@@ -4,3 +4,6 @@ __pycache__/
 node_modules/
 dist/
 tmp/
+.claude/
+CLAUDE.md
+fill_missing_photos.py

@@ -983,7 +983,10 @@ function renderCards(list) {
 }
 
 function tempInfo(spot) {
-  if (!weatherCache || !weatherCache.forecasts) return "";
+  if (!weatherCache || !weatherCache.forecasts) {
+    // Weather not loaded yet — show subtle loading indicator
+    return `<div class="temp-info temp-loading">🌡 ${escapeHtml(t("weather.loading"))}</div>`;
+  }
   const prefJa = spot.prefecture.ja;
   const prefs = prefJa.split("・");
 
@@ -1016,7 +1019,8 @@ function tempInfo(spot) {
         </div>`;
     }
   }
-  return "";
+  // Weather data exists but no matching prefecture/type
+  return `<div class="temp-info temp-loading">🌡 —</div>`;
 }
 
 function cardTemplate(spot) {
@@ -1598,6 +1602,7 @@ function bindEvents() {
     el.refreshWeather.addEventListener("click", () => {
       weatherCache = null;
       renderWeather();
+      render(); // re-render cards to show loading state
       fetchWeather();
     });
   }
@@ -1765,7 +1770,8 @@ async function fetchWeather() {
     weatherCache = null;
   }
   renderWeather();
-  if (state.view === "cards") render(); // refresh cards to show tempInfo
+  // Always refresh cards to show tempInfo
+  render();
 }
 
 function weatherIcon(code) {

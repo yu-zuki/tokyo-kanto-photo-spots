@@ -1152,6 +1152,12 @@ td.score-cell {
   color: var(--red);
 }
 
+.temp-info.temp-loading {
+  background: var(--paper);
+  color: var(--muted);
+  font-style: italic;
+}
+
 /* ---- Score Toggle ---- */
 .score-toggle {
   display: inline-flex;

@@ -982,20 +982,35 @@ function renderCards(list) {
   el.cards.innerHTML = list.map(cardTemplate).join("");
 }
 
-function tempInfo(spot) {
-  if (!weatherCache || !weatherCache.forecasts) {
-    // Weather not loaded yet — show subtle loading indicator
-    return `<div class="temp-info temp-loading">🌡 ${escapeHtml(t("weather.loading"))}</div>`;
-  }
+function weatherScore(spot) {
+  // Returns { score: 0-7, level: 'good'|'ok'|'bad', temp, code, rain }
+  // Returns null if weather data not loaded yet
+  if (!weatherCache || !weatherCache.forecasts) return null;
+
   const prefJa = spot.prefecture.ja;
   const prefs = prefJa.split("・");
 
   for (const pref of prefs) {
     const fc = weatherCache.forecasts[pref];
-    if (!fc || !fc.high || fc.high.length === 0) continue;
+    if (!fc || !fc.code || fc.code.length === 0) continue;
 
-    const todayHigh = Math.round(fc.high[0]);
-    const shift = comfortShift();
+    const code = fc.code[0];
+    const rain = fc.rain ? (fc.rain[0] || 0) : 0;
+    const high = fc.high ? (fc.high[0] || 99) : 99;
+
+    // Score: weather code
+    let codeScore = 0;
+    if (code >= 51 && code <= 82) codeScore = 2;  // rain
+    else if (code >= 95) codeScore = 3;             // storm
+    else if (code >= 45) codeScore = 1;             // fog
+
+    // Score: rain probability
+    let rainScore = 0;
+    if (rain >= 60) rainScore = 2;
+    else if (rain >= 30) rainScore = 1;
+
+    // Score: temperature
+    let tempScore = 0;
     const allTypes = [spot.primaryType.ja];
     if (spot.typeDetail.ja) {
       for (const t of spot.typeDetail.ja.split("/")) {
@@ -1003,24 +1018,55 @@ function tempInfo(spot) {
         if (c && c !== spot.primaryType.ja) allTypes.push(c);
       }
     }
-
+    let tempOk = false;
+    const shift = comfortShift();
     for (const t of allTypes) {
       const range = TYPE_TEMP_RANGE[t];
       if (!range) continue;
       const lo = range[0] + shift;
       const hi = range[1] + shift;
-      const ok = todayHigh >= lo && todayHigh <= hi;
-      const cls = ok ? "temp-ok" : "temp-ng";
-      const icon = ok ? "✓" : "✗";
-      return `
-        <div class="temp-info ${cls}">
-          <span>🌡 ${escapeHtml(t("card.tempRange"))} ${lo}〜${hi}°C</span>
-          <span>${escapeHtml(t("card.tempToday"))} ${todayHigh}°C ${icon}</span>
-        </div>`;
+      if (high >= lo && high <= hi) { tempOk = true; break; }
+      // How far outside the range?
+      const dist = Math.min(Math.abs(high - lo), Math.abs(high - hi));
+      if (dist <= 5) tempScore = Math.min(tempScore || 1, 1);
+      else tempScore = 2;
     }
+    if (tempOk) tempScore = 0;
+
+    const total = codeScore + rainScore + tempScore;
+    const level = total <= 1 ? "good" : total <= 3 ? "ok" : "bad";
+
+    return { score: total, level, high: Math.round(high), code, rain, codeScore, rainScore, tempScore };
   }
-  // Weather data exists but no matching prefecture/type
-  return `<div class="temp-info temp-loading">🌡 —</div>`;
+  return null;
+}
+
+function weatherBadge(spot) {
+  const ws = weatherScore(spot);
+  if (!ws) return `<div class="weather-badge badge-loading">🌡 …</div>`;
+
+  const labels = { good: "快適", ok: "まあまあ", bad: "不向き" };
+  const icons = { good: "🟢", ok: "🟡", bad: "🔴" };
+  const lvl = ws.level;
+
+  const parts = [];
+  if (ws.codeScore > 0) parts.push(ws.code >= 51 ? "☔" : "🌫");
+  if (ws.rainScore > 0) parts.push(`${ws.rain}%`);
+  parts.push(`${ws.high}°C`);
+
+  return `
+    <div class="weather-badge badge-${lvl}" title="${icons[lvl]} ${labels[lvl]}: 天気${ws.codeScore} + 降水${ws.rainScore} + 気温${ws.tempScore} = ${ws.score}点">
+      <span class="badge-icon">${icons[lvl]}</span>
+      <span class="badge-label">${labels[lvl]}</span>
+      <span class="badge-detail">${parts.join(" · ")}</span>
+    </div>`;
+}
+
+// Keep old filter function (used by "天気に合う場所のみ" checkbox)
+function isWeatherGoodForSpot(spot) {
+  const ws = weatherScore(spot);
+  if (!ws) return true; // no data = show all
+  return ws.level !== "bad"; // hide only 🔴, show 🟢 and 🟡
 }
 
 function cardTemplate(spot) {
@@ -1055,7 +1101,7 @@ function cardTemplate(spot) {
         <div><span>${escapeHtml(t("card.typeDetail"))}</span>${escapeHtml(localized(spot.typeDetail))}</div>
         <div><span>${escapeHtml(t("card.niche"))}</span>${escapeHtml(spot.niche ?? "-")}</div>
       </div>
-      ${tempInfo(spot)}
+      ${weatherBadge(spot)}
       <button class="score-toggle" type="button" data-toggle-score="${id}" aria-expanded="false" title="${escapeHtml(t("card.scoreBreakdown"))}">
         ▸ ${escapeHtml(t("card.scoreBreakdown"))}
       </button>

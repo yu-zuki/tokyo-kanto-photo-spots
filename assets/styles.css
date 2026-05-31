@@ -1130,11 +1130,11 @@ td.score-cell {
   border-color: var(--teal);
 }
 
-/* ---- Temp Info ---- */
-.temp-info {
+/* ---- Weather Badge (per-card) ---- */
+.weather-badge {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 0.4rem;
   padding: 0.35rem 0.5rem;
   margin-top: 0.4rem;
   border-radius: 6px;
@@ -1142,20 +1142,34 @@ td.score-cell {
   font-weight: 500;
 }
 
-.temp-info.temp-ok {
-  background: var(--teal-soft);
-  color: var(--teal);
+.weather-badge.badge-good {
+  background: #d4edda;
+  color: #1a5c2a;
 }
 
-.temp-info.temp-ng {
+.weather-badge.badge-ok {
+  background: #fff3cd;
+  color: #7a5d00;
+}
+
+.weather-badge.badge-bad {
   background: #fce4e4;
-  color: var(--red);
+  color: #8b2e2e;
 }
 
-.temp-info.temp-loading {
+.weather-badge.badge-loading {
   background: var(--paper);
   color: var(--muted);
-  font-style: italic;
+}
+
+.badge-icon {
+  font-size: 1rem;
+}
+
+.badge-detail {
+  font-size: 0.7rem;
+  opacity: 0.7;
+  margin-left: auto;
 }
 
 /* ---- Score Toggle ---- */

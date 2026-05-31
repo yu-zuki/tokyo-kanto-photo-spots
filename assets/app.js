@@ -78,7 +78,8 @@ const UI_TEXT = {
     "weather.updated": "更新",
     "memo.placeholder": "メモを追加...",
     "memo.save": "保存",
-    "memo.edit": "編集"
+    "memo.edit": "編集",
+    "weather.comfortLabel": "快適気温"
   },
   zh: {
     "app.title": "东京・关东摄影地笔记",
@@ -151,7 +152,8 @@ const UI_TEXT = {
     "weather.updated": "更新于",
     "memo.placeholder": "添加备注...",
     "memo.save": "保存",
-    "memo.edit": "编辑"
+    "memo.edit": "编辑",
+    "weather.comfortLabel": "舒适温度"
   },
 };
 
@@ -319,6 +321,7 @@ const state = {
   savedOnly: false,
   seasonNow: false,
   weatherMatch: false,
+  comfortTemp: Number(localStorage.getItem("photoSpotComfortTemp")) || DEFAULT_COMFORT_TEMP,
   sort: "score-desc",
   view: "cards",
 };
@@ -370,6 +373,8 @@ const el = {
   weatherMatch: document.querySelector("#weatherMatch"),
   weatherContent: document.querySelector("#weatherContent"),
   refreshWeather: document.querySelector("#refreshWeather"),
+  comfortTemp: document.querySelector("#comfortTemp"),
+  comfortValue: document.querySelector("#comfortValue"),
 };
 
 const spots = rawSpots.map(normalizeSpot);
@@ -1464,6 +1469,8 @@ function syncControls() {
   el.savedOnly.checked = state.savedOnly;
   el.seasonNow.checked = state.seasonNow;
   el.weatherMatch.checked = state.weatherMatch;
+  el.comfortTemp.value = state.comfortTemp;
+  el.comfortValue.textContent = state.comfortTemp;
   el.sortSelect.value = state.sort;
   syncFilters();
 }
@@ -1509,6 +1516,12 @@ function bindEvents() {
   el.weatherMatch.addEventListener("change", (event) => {
     state.weatherMatch = event.target.checked;
     render();
+  });
+  el.comfortTemp.addEventListener("input", () => {
+    state.comfortTemp = Number(el.comfortTemp.value);
+    el.comfortValue.textContent = state.comfortTemp;
+    localStorage.setItem("photoSpotComfortTemp", state.comfortTemp);
+    if (state.weatherMatch) render();
   });
   el.refreshWeather.addEventListener("click", () => {
     weatherCache = null;
@@ -1722,52 +1735,69 @@ function renderWeather() {
   el.weatherContent.innerHTML = html;
 }
 
-// ---- Weather-based spot type matching ----
-// Weather code → weather class
-// Open-Meteo codes: 0=clear, 1-3=partly cloudy, 45-48=fog, 51-67=rain, 71-77=snow, 80-82=showers, 95-99=thunderstorm
-function weatherClassForCode(code) {
-  if (code === 0) return "fine";           // Clear sky
-  if (code <= 3) return "cloudy";          // Partly cloudy
-  if (code <= 48) return "cloudy";         // Foggy
-  if (code <= 67) return "rain";           // Rain/drizzle
-  if (code <= 77) return "rain";           // Snow (treat like rain for photography)
-  if (code <= 82) return "rain";           // Rain showers
-  return "storm";                           // Thunderstorm
+// Spot type temperature comfort ranges (at default comfortTemp=26°C, shift=0)
+// shift = comfortTemp - 26, applied symmetrically to min/max
+const TYPE_TEMP_RANGE = {
+  "海岸":              [10, 30],
+  "展望・山岳":        [ 5, 28],
+  "庭園・花":          [ 8, 32],
+  "渓谷・滝":          [ 5, 30],
+  "湖沼・湿地":        [ 5, 32],
+  "街歩き":            [ 0, 33],
+  "寺社":              [-5, 35],
+  "都市夜景":          [-5, 35],
+  "歴史・遺構":        [ 0, 33],
+  "鉄道・航空機":      [-5, 35],
+  "動物・テーマ施設":  [-5, 35],
+  "工場夜景":          [-5, 35],
+};
+const DEFAULT_COMFORT_TEMP = 26;
+
+function comfortShift() {
+  return (state.comfortTemp || DEFAULT_COMFORT_TEMP) - DEFAULT_COMFORT_TEMP;
 }
 
-// Spot type categories suitable for each weather
-const WEATHER_SPOT_MAP = {
-  fine:    ["海岸", "展望・山岳", "庭園・花", "渓谷・滝", "湖沼・湿地", "富士山", "鉄道・航空機"],
-  cloudy:  ["海岸", "展望・山岳", "庭園・花", "渓谷・滝", "湖沼・湿地", "街歩き", "寺社", "歴史・遺構", "鉄道・航空機", "都市夜景"],
-  rain:    ["寺社", "都市夜景", "街歩き", "歴史・遺構", "鉄道・航空機", "動物・テーマ施設", "工場夜景"],
-  storm:   ["寺社", "都市夜景", "歴史・遺構", "動物・テーマ施設"],
-};
-
 function isWeatherGoodForSpot(spot) {
-  if (!weatherCache || !weatherCache.forecasts) return true; // No weather data, show all
+  if (!weatherCache || !weatherCache.forecasts) return true;
   const prefJa = spot.prefecture.ja;
-  // Handle multi-prefecture spots (e.g. "東京/埼玉")
   const prefs = prefJa.split("・");
 
-  // Get today's weather for the first matching prefecture
   for (const pref of prefs) {
-    const forecast = weatherCache.forecasts[pref];
-    if (!forecast || !forecast.code || forecast.code.length === 0) continue;
-    const todayCode = forecast.code[0]; // First day = today
-    const rainProb = forecast.rain ? (forecast.rain[0] || 0) : 0;
+    const fc = weatherCache.forecasts[pref];
+    if (!fc || !fc.code || fc.code.length === 0) continue;
 
-    let weatherClass = weatherClassForCode(todayCode);
-    // If rain probability is high but code says cloudy, treat as rain for safety
-    if (weatherClass === "cloudy" && rainProb >= 60) weatherClass = "rain";
-    if (weatherClass === "fine" && rainProb >= 70) weatherClass = "rain";
+    const code = fc.code[0];
+    const rain = fc.rain ? (fc.rain[0] || 0) : 0;
+    const high = fc.high ? (fc.high[0] || 99) : 99;
 
-    const goodTypes = WEATHER_SPOT_MAP[weatherClass] || WEATHER_SPOT_MAP.cloudy;
-    const spotType = spot.primaryType.ja;
+    // 1. Weather code → rain/storm = bad
+    if (code > 48) return false;
 
-    // Check if spot type matches
-    if (goodTypes.includes(spotType)) return true;
-    // Also check type detail
-    if (spot.typeDetail.ja && goodTypes.some(t => spot.typeDetail.ja.includes(t.replace("・", "")))) return true;
+    // 2. Rain probability ≥ 60% → treat as bad
+    if (rain >= 60) return false;
+
+    // 3. Temperature check
+    const allTypes = [spot.primaryType.ja];
+    if (spot.typeDetail.ja) {
+      for (const t of spot.typeDetail.ja.split("/")) {
+        const cleaned = t.trim();
+        if (cleaned && cleaned !== spot.primaryType.ja) allTypes.push(cleaned);
+      }
+    }
+
+    let tempOk = false;
+    const shift = comfortShift();
+    for (const t of allTypes) {
+      const range = TYPE_TEMP_RANGE[t];
+      if (!range) continue;
+      if (high >= range[0] + shift && high <= range[1] + shift) {
+        tempOk = true;
+        break;
+      }
+    }
+    if (!tempOk) return false;
+
+    return true;
   }
   return false;
 }

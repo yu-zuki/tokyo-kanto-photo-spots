@@ -321,7 +321,7 @@ const state = {
   savedOnly: false,
   seasonNow: false,
   weatherMatch: false,
-  comfortTemp: Number(localStorage.getItem("photoSpotComfortTemp")) || DEFAULT_COMFORT_TEMP,
+  comfortTemp: Number(localStorage.getItem("photoSpotComfortTemp")) || 26,
   sort: "score-desc",
   view: "cards",
 };

@@ -2723,6 +2723,7 @@ function travelCardTemplate(spot) {
     <div class="score-line"><div class="score">${spot.score}</div><div class="score-track"><div class="score-fill" style="--score:${spot.score}%"></div></div><strong>${spot.grade}</strong></div>
     <div class="tag-row"><span class="tag grade-${grade}">${spot.grade}</span><span class="tag">${escapeHtml(localized(spot.primaryType))}</span><span class="tag">${escapeHtml(travelStyleLabel(spot.trip_style))}</span></div>
     <p class="spot-desc">${escapeHtml(localized(spot.description))}</p>
+    ${state.homePref ? `<div><span>🚃 ${state.homePref}から</span>${travelTimeStr(spot) || '-'}</div>` : ""}
     <div class="meta-grid"><div><span>静かな時間</span>${escapeHtml(spot.quiet_window||'-')}</div><div><span>ベスト</span>${escapeHtml(spot.best_season||'-')}</div><div><span>滞在</span>${'★'.repeat(Math.min(5,Math.round((spot.stay_density||0)/2)))}</div><div><span>ｱｸｾｽ</span>${spot.access_minutes||'-'}分</div></div>
     <div class="link-row">${(TRAVEL_REF_DATA[spot.id]||[]).map(r=>`<a class="source-link" href="${escapeHtml(r.url)}" target="_blank" rel="noreferrer">${escapeHtml(r.name)}</a>`).join("")}</div>
   </article>`;}

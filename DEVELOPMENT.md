@@ -32,6 +32,10 @@
   画面全体の見た目。
 - `build_spot_locations.py`
   `assets/spot_locations.js` を生成する位置データ builder。
+- `manifest.json`
+  PWAマニフェスト。アプリ名・テーマカラー・スタンドアロン表示設定。
+- `docs/AGENT_UPDATE_FLOW.md`
+  AI agent 用の更新手順書。撮影地追加・写真取得・座標修正・テスト・デプロイの標準フロー。
 
 ## データモデルと更新 Flow
 
@@ -61,6 +65,43 @@ assets/data.js
 ```
 
 このため、新しい撮影地を追加するときは `assets/data.js` に spot を追加し、必要に応じて metadata builder を実行します。UI 側にカード、表行、地図 marker を手で追加する必要はありません。
+
+## 天気連携
+
+Open-Meteo 無料API（キー不要）で9都県の3日間予報を取得。
+
+- `fetchWeather()`: APIコール → `weatherCache` に保存 → `renderWeather()` + `render()`
+- `weatherScore(spot)`: 天気コード(0-3) + 降水確率(0-2) + 気温差(0-2) → 0-7点
+  - 0-1点: 🟢 快適 / 2-3点: 🟡 まあまあ / 4-7点: 🔴 不向き
+- `weatherBadge(spot)`: 各カードに色分けバッジ + 気温 + 降水 + 日の出/日没
+- `TYPE_TEMP_RANGE`: 12撮影タイプ別のデフォルト適温範囲（26°C基準）
+- `comfortShift()`: 快適気温スライダー値 - 26 = シフト量。全タイプの適温範囲が平行移動
+- 「天気に合う場所のみ」チェック: 🔴を非表示、🟢🟡のみ表示
+
+## 季節フィルター
+
+- `parseSeasonMonths()`: 「3-5月 桜」「通年」「春」などのテキストを月配列に変換
+- `isSpotInSeasonNow()`: 現在月が seasonMonths に含まれるか判定
+- 「今が見頃のみ」チェックでフィルター
+
+## 旅程計画
+
+- `tripPlan`: 順序付きスポットID配列（localStorage保存）
+- 各カードの ○/📍 ボタンで追加/削除
+- サイドバーに番号付き旅程リスト表示
+- 📋 クリップボードコピー、🗺 地図表示切替
+- `TRAVEL_TIME`: 9×9都県間の概算移動時間テーブル
+- `travelTimeStr(spot)`: 出発地選択時に各カードへ「🚃 約50分」表示
+
+## PWA
+
+- `manifest.json`: アプリ名、テーマカラー #2f6f67、スタンドアロン表示
+- `sw.js`: 静的アセットをキャッシュ（Cache-First）、APIはネットワーク優先
+- 山間部・海岸など電波の弱い場所でもオフライン動作
+
+## 印刷 / エクスポート
+
+- `@media print`: サイドバー・ボタン類を非表示、カードのみ印刷
 
 ## フロントエンド Adapter
 

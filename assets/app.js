@@ -1043,7 +1043,7 @@ function render() {
   el.tableWrap.classList.toggle("hidden", state.view !== "table");
   el.mapWrap.classList.toggle("hidden", state.view !== "map");
   el.tripView.classList.toggle("hidden", state.view !== "trip");
-  if (el.tripPanel) el.tripPanel.classList.toggle("hidden", state.view !== "trip");
+  if (el.tripPanel) el.tripPanel.classList.toggle("hidden", isTravel && state.view !== "trip");
   // Hide score toggle group in travel mode
   el.travelFilterBar.classList.toggle("hidden", !isTravel || state.view !== "cards");
   el.scoreToggleGroup.classList.toggle("hidden", isTravel || state.view !== "cards");

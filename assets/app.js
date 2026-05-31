@@ -328,8 +328,8 @@ const state = {
 
 if (!UI_TEXT[state.lang]) state.lang = "ja";
 
-const saved = new Set(JSON.parse(localStorage.getItem("photoSpotSaved") || "[]"));
-const memos = JSON.parse(localStorage.getItem("photoSpotMemos") || "{}");
+const saved = new Set(safeJsonStorage("photoSpotSaved", []));
+const memos = safeJsonStorage("photoSpotMemos", {});
 let weatherCache = null; // { updated, forecasts: { prefJa: { high, low, rain, icon } } }
 let tableColumns = loadTableColumns();
 let mapRuntime = { provider: null, map: null, layer: null, markers: [], infoWindow: null };
@@ -378,6 +378,17 @@ const el = {
 };
 
 const spots = rawSpots.map(normalizeSpot);
+
+function safeJsonStorage(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw);
+  } catch {
+    localStorage.removeItem(key);
+    return fallback;
+  }
+}
 
 function normalizeSpot(raw) {
   const nameJa = localizeSpotName(raw["地点"]);
@@ -486,8 +497,8 @@ function applyStaticLanguage() {
       if (attr && key) node.setAttribute(attr, t(key));
     });
   });
-  el.langJa.classList.toggle("active", state.lang === "ja");
-  el.langZh.classList.toggle("active", state.lang === "zh");
+  if (el.langJa) el.langJa.classList.toggle("active", state.lang === "ja");
+  if (el.langZh) el.langZh.classList.toggle("active", state.lang === "zh");
 }
 
 function localized(value) {
@@ -1467,10 +1478,10 @@ function syncControls() {
   el.minScore.value = state.minScore;
   el.minScoreValue.textContent = state.minScore;
   el.savedOnly.checked = state.savedOnly;
-  el.seasonNow.checked = state.seasonNow;
-  el.weatherMatch.checked = state.weatherMatch;
-  el.comfortTemp.value = state.comfortTemp;
-  el.comfortValue.textContent = state.comfortTemp;
+  if (el.seasonNow) el.seasonNow.checked = state.seasonNow;
+  if (el.weatherMatch) el.weatherMatch.checked = state.weatherMatch;
+  if (el.comfortTemp) el.comfortTemp.value = state.comfortTemp;
+  if (el.comfortValue) el.comfortValue.textContent = state.comfortTemp;
   el.sortSelect.value = state.sort;
   syncFilters();
 }
@@ -1489,8 +1500,8 @@ function bindMultiFilter(container, selectedSet) {
 }
 
 function bindEvents() {
-  el.langJa.addEventListener("click", () => setLanguage("ja"));
-  el.langZh.addEventListener("click", () => setLanguage("zh"));
+  if (el.langJa) el.langJa.addEventListener("click", () => setLanguage("ja"));
+  if (el.langZh) el.langZh.addEventListener("click", () => setLanguage("zh"));
   el.searchInput.addEventListener("input", (event) => {
     state.search = event.target.value;
     render();
@@ -1509,25 +1520,33 @@ function bindEvents() {
     state.savedOnly = event.target.checked;
     render();
   });
-  el.seasonNow.addEventListener("change", (event) => {
-    state.seasonNow = event.target.checked;
-    render();
-  });
-  el.weatherMatch.addEventListener("change", (event) => {
-    state.weatherMatch = event.target.checked;
-    render();
-  });
-  el.comfortTemp.addEventListener("input", () => {
-    state.comfortTemp = Number(el.comfortTemp.value);
-    el.comfortValue.textContent = state.comfortTemp;
-    localStorage.setItem("photoSpotComfortTemp", state.comfortTemp);
-    if (state.weatherMatch) render();
-  });
-  el.refreshWeather.addEventListener("click", () => {
-    weatherCache = null;
-    renderWeather();
-    fetchWeather();
-  });
+  if (el.seasonNow) {
+    el.seasonNow.addEventListener("change", (event) => {
+      state.seasonNow = event.target.checked;
+      render();
+    });
+  }
+  if (el.weatherMatch) {
+    el.weatherMatch.addEventListener("change", (event) => {
+      state.weatherMatch = event.target.checked;
+      render();
+    });
+  }
+  if (el.comfortTemp) {
+    el.comfortTemp.addEventListener("input", () => {
+      state.comfortTemp = Number(el.comfortTemp.value);
+      if (el.comfortValue) el.comfortValue.textContent = state.comfortTemp;
+      localStorage.setItem("photoSpotComfortTemp", state.comfortTemp);
+      if (state.weatherMatch) render();
+    });
+  }
+  if (el.refreshWeather) {
+    el.refreshWeather.addEventListener("click", () => {
+      weatherCache = null;
+      renderWeather();
+      fetchWeather();
+    });
+  }
   el.sortSelect.addEventListener("change", (event) => {
     state.sort = event.target.value;
     render();

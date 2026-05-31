@@ -1029,19 +1029,21 @@ function render() {
   el.resultCount.textContent = list.length;
   el.savedCount.textContent = saved.size;
   el.totalCount.textContent = isTravel ? travelSpots.length : spots.length;
-  if (!isTravel) { renderCharts(list); renderBest(list); renderTripPanel(); }
-  else {
-    // Travel: hide photo-specific panels
-    if (el.gradeChart) el.gradeChart.innerHTML = "";
-    if (el.typeChart) el.typeChart.innerHTML = "";
-    if (el.bestSpot) el.bestSpot.innerHTML = "";
-    if (el.tripPanel) el.tripPanel.classList.add("hidden");
+  if (!isTravel) {
+    renderCharts(list);
+    renderBest(list);
+    renderTripPanel();
+    if (el.tripPanel) el.tripPanel.classList.remove("hidden");
+  } else {
+    renderTravelDashboard(list);
+    if (state.view === "trip") renderTravelTripPanel(list);
   }
-  el.dashboardView.classList.toggle("hidden", state.view !== "dashboard" || isTravel);
+  el.dashboardView.classList.toggle("hidden", state.view !== "dashboard");
   el.cards.classList.toggle("hidden", state.view !== "cards");
   el.tableWrap.classList.toggle("hidden", state.view !== "table");
   el.mapWrap.classList.toggle("hidden", state.view !== "map");
   el.tripView.classList.toggle("hidden", state.view !== "trip");
+  if (el.tripPanel) el.tripPanel.classList.toggle("hidden", isTravel && state.view !== "trip");
   // Hide score toggle group in travel mode
   el.travelFilterBar.classList.toggle("hidden", !isTravel || state.view !== "cards");
   el.scoreToggleGroup.classList.toggle("hidden", isTravel || state.view !== "cards");
@@ -1055,8 +1057,8 @@ function render() {
     if (isTravel) { renderTravelMap(list); }
     else { renderMap(list); }
   } else if (state.view === "trip") {
-    // Trip view: photo shows trip panel, travel shows simple list
-    if (!isTravel) { /* trip panel is in sidebar */ }
+    // Trip view: photo uses the saved route panel; travel currently shows candidate guidance.
+    if (isTravel) renderTravelTripPanel(list);
   }
 }
 
@@ -1114,36 +1116,125 @@ function renderTravelTable(list) {
 }
 
 function renderTravelMap(list) {
-  el.mapCount.textContent = list.length;
-  el.mapPrecision.textContent = "";
+  const token = ++mapRenderToken;
   const located = list.map(s => ({
     spot: s,
-    location: TRAVEL_LOCS.locations[s.id] || null
+    location: TRAVEL_LOCS.locations[s.id] ? { ...TRAVEL_LOCS.locations[s.id], precision: "verified" } : null
   })).filter(x => x.location);
+  el.mapCount.textContent = located.length;
+  el.mapPrecision.textContent = located.length ? "旅行候補の登録座標を表示" : "";
+  el.mapFallback.classList.add("hidden");
 
-  ensureMapProvider().then(provider => {
-    if (provider === "leaflet") {
-      if (!mapRuntime.map || mapRuntime.provider !== "leaflet") {
-        mapRuntime = { provider: "leaflet", map: window.L.map(el.mapCanvas, { scrollWheelZoom: true }), layer: null, markers: [] };
+  ensureMapProvider()
+    .then((provider) => {
+      if (token !== mapRenderToken) return;
+      if (provider === "google") {
+        renderTravelGoogleMap(located);
+      } else {
+        renderTravelLeafletMap(located);
       }
-      mapRuntime.markers.forEach(m => mapRuntime.map.removeLayer(m));
-      mapRuntime.markers = [];
-      const bounds = [];
-      located.forEach(({spot, location}) => {
-        const latlng = [location.lat, location.lng];
-        bounds.push(latlng);
-        const marker = window.L.circleMarker(latlng, {
-          radius: 7, fillOpacity: 0.8, weight: 1.5,
-          color: spot.crowdLevel === 'low' ? '#438767' : spot.crowdLevel === 'medium' ? '#efc85a' : '#bf5068',
-          fillColor: spot.crowdLevel === 'low' ? '#438767' : spot.crowdLevel === 'medium' ? '#efc85a' : '#bf5068',
-        }).addTo(mapRuntime.map);
-        marker.bindPopup(`<strong>${escapeHtml(localized(spot.name))}</strong><br>${spot.crowdLevel} · ${spot.grade}<br><a href="https://www.google.com/maps/search/${encodeURIComponent(spot.name.ja)}" target="_blank">Google Maps</a>`);
-        mapRuntime.markers.push(marker);
-      });
-      if (bounds.length) mapRuntime.map.fitBounds(bounds, {padding: [30,30]});
-    }
-    el.mapFallback.innerHTML = `<p>${escapeHtml(t("map.loadFailedTitle"))}</p><p>${escapeHtml(t("map.loadFailedBody"))}</p>`;
+    })
+    .catch(() => renderTravelMapFallback(located));
+}
+
+function travelMapsUrl(spot) {
+  const query = encodeURIComponent([spot.name.ja, spot.area.ja, spot.prefecture.ja, "日本"].filter(Boolean).join(" "));
+  return `https://www.google.com/maps/search/?api=1&query=${query}`;
+}
+
+function travelMarkerColor(spot) {
+  if (spot.crowdLevel === "low") return "#438767";
+  if (spot.crowdLevel === "medium") return "#d49a3a";
+  if (spot.crowdLevel === "high") return "#bf5068";
+  return "#8f3f72";
+}
+
+function travelMapPopupHtml(spot) {
+  const meta = TRAVEL_META[spot.id] || {};
+  const imgSrc = meta.localImageUrl || meta.imageUrl || "";
+  return `
+    <div class="map-popup">
+      ${imgSrc ? `<img src="${escapeHtml(imgSrc)}" alt="">` : ""}
+      <strong>${escapeHtml(localized(spot.name))}</strong>
+      <span>${escapeHtml(localized(spot.prefecture))} / ${escapeHtml(localized(spot.area))}</span>
+      <span>${escapeHtml(localized(spot.primaryType))}・${escapeHtml(spot.grade)}${escapeHtml(t("common.rank"))}・${escapeHtml(spot.score)}${escapeHtml(t("common.points"))}</span>
+      <span>${escapeHtml(travelCrowdLabel(spot.crowdLevel))} / ${escapeHtml(travelStyleLabel(spot.trip_style))}</span>
+      <a href="${escapeHtml(travelMapsUrl(spot))}" target="_blank" rel="noreferrer">${escapeHtml(t("map.open"))}</a>
+    </div>
+  `;
+}
+
+function renderTravelLeafletMap(located) {
+  if (!mapRuntime.map || mapRuntime.provider !== "leaflet") {
+    mapRuntime = { provider: "leaflet", map: window.L.map(el.mapCanvas, { scrollWheelZoom: true }), layer: null, markers: [] };
+  }
+  if (!mapRuntime.baseLayer) {
+    mapRuntime.baseLayer = window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 18,
+      attribution: "&copy; OpenStreetMap contributors",
+    }).addTo(mapRuntime.map);
+  }
+  if (!mapRuntime.layer) mapRuntime.layer = window.L.layerGroup().addTo(mapRuntime.map);
+  mapRuntime.layer.clearLayers();
+  const bounds = [];
+  located.forEach(({ spot, location }) => {
+    const latlng = [location.lat, location.lng];
+    bounds.push(latlng);
+    window.L.circleMarker(latlng, {
+      radius: 7,
+      fillOpacity: 0.82,
+      weight: 2,
+      color: travelMarkerColor(spot),
+      fillColor: travelMarkerColor(spot),
+    })
+      .bindPopup(travelMapPopupHtml(spot), { maxWidth: 280 })
+      .addTo(mapRuntime.layer);
   });
+  setTimeout(() => mapRuntime.map.invalidateSize(), 0);
+  if (bounds.length) {
+    mapRuntime.map.fitBounds(bounds, { padding: [30, 30], maxZoom: 9 });
+  } else {
+    mapRuntime.map.setView([35.681236, 139.767125], 8);
+  }
+}
+
+function renderTravelGoogleMap(located) {
+  if (!mapRuntime.map || mapRuntime.provider !== "google") {
+    mapRuntime = {
+      provider: "google",
+      map: new google.maps.Map(el.mapCanvas, { center: { lat: 35.681236, lng: 139.767125 }, zoom: 8, mapTypeControl: false }),
+      markers: [],
+      infoWindow: new google.maps.InfoWindow(),
+    };
+  }
+  mapRuntime.markers.forEach((marker) => marker.setMap(null));
+  mapRuntime.markers = [];
+  const bounds = new google.maps.LatLngBounds();
+  located.forEach(({ spot, location }) => {
+    const position = { lat: location.lat, lng: location.lng };
+    const marker = new google.maps.Marker({ position, map: mapRuntime.map, title: spot.name.ja });
+    marker.addListener("click", () => {
+      mapRuntime.infoWindow.setContent(travelMapPopupHtml(spot));
+      mapRuntime.infoWindow.open({ map: mapRuntime.map, anchor: marker });
+    });
+    mapRuntime.markers.push(marker);
+    bounds.extend(position);
+  });
+  if (located.length) mapRuntime.map.fitBounds(bounds, 30);
+}
+
+function renderTravelMapFallback(located) {
+  el.mapFallback.classList.remove("hidden");
+  el.mapFallback.innerHTML = `
+    <strong>${escapeHtml(t("map.loadFailedTitle"))}</strong>
+    <p>${escapeHtml(t("map.loadFailedBody"))}</p>
+    <div class="fallback-links">
+      ${located
+        .slice(0, 80)
+        .map(({ spot }) => `<a href="${escapeHtml(travelMapsUrl(spot))}" target="_blank" rel="noreferrer">${escapeHtml(localized(spot.name))}</a>`)
+        .join("")}
+    </div>
+  `;
 }
 
 function renderCards(list) {
@@ -2312,6 +2403,7 @@ function travelTimeStrBetween(fromId, toId) {
 const TRAVEL_DATA = window.TRAVEL_DATA || { spots: [] };
 const TRAVEL_LOCS = window.TRAVEL_LOCATIONS || { locations: {} };
 const TRAVEL_REF_DATA = window.TRAVEL_REFS || {};
+const TRAVEL_META = window.TRAVEL_PHOTO_META || {};
 
 const TRAVEL_CATEGORY_ZH = {"山・高原":"山·高原","海・島":"海·岛","湖・湿原":"湖·湿原","滝・渓谷":"瀑布·溪谷","古い町並み":"古街","温泉":"温泉","寺社":"寺社","公園・庭園":"公园·庭园","美術館・博物館":"美术馆·博物馆","宿場町":"宿场町","牧場・農園":"牧场·农园","テーマ施設":"主题设施","商店街・市場":"商店街·市场","絶景道路":"绝景道路","ローカル鉄道":"地方铁道"};
 
@@ -2322,13 +2414,35 @@ const TRAVEL_SCORE = [
   [{ja:"天候",zh:"天气"}, "score_weather", 5], [{ja:"再訪",zh:"重访"}, "score_revisit", 5],
 ];
 
+function inferTravelScore(source) {
+  const explicit = Number(source.total);
+  if (Number.isFinite(explicit) && explicit > 0) return explicit;
+  const crowd = { low: 30, medium: 22, high: 13, extreme: 6 }[source.crowd_level] || 18;
+  const density = Math.max(0, Math.min(10, Number(source.stay_density) || 5));
+  const experience = Math.round(density * 2);
+  const access = { A: 15, B: 11, C: 7 }[source.access_level] || 9;
+  const season = source.best_season && !String(source.best_season).includes("特になし") ? 8 : 6;
+  const stay = Math.round(density);
+  const cost = { low: 5, medium: 4, high: 2 }[source.cost_level] || 3;
+  const weather = { low: 5, medium: 3, high: 1 }[source.weather_risk] || 3;
+  const revisit = source.trip_style === "weekend" || density >= 7 ? 5 : 4;
+  return Math.max(0, Math.min(100, crowd + experience + access + season + stay + cost + weather + revisit));
+}
+
+function inferTravelGrade(score) {
+  if (score >= 86) return "S";
+  if (score >= 74) return "A";
+  if (score >= 62) return "B";
+  return "C";
+}
+
 const travelSpots = (TRAVEL_DATA.spots || []).map(s => ({
   ...s, id: s.travel_id,
   name: {ja: s.name_ja, zh: s.name_zh || s.name_ja},
   prefecture: {ja: s.prefecture, zh: s.prefecture},
   area: {ja: s.area, zh: s.area},
   primaryType: {ja: s.primary_category, zh: TRAVEL_CATEGORY_ZH[s.primary_category] || s.primary_category},
-  score: s.total || 0, grade: s.grade || "C",
+  score: inferTravelScore(s), grade: s.grade || inferTravelGrade(inferTravelScore(s)),
   crowdLevel: s.crowd_level || "medium",
   description: {ja: s.description_ja || "", zh: s.description_zh || ""},
 }));
@@ -2350,7 +2464,83 @@ function filteredTravelSpots() {
     if (travelState.tripStyle.size > 0 && !travelState.tripStyle.has(s.trip_style)) return false;
     if (s.score < travelState.minScore) return false;
     return true;
-  });
+  }).sort(travelSorter(state.sort));
+}
+
+function travelSorter(mode) {
+  const byScore = (a, b) => b.score - a.score;
+  const byName = (a, b) => String(a.name.ja).localeCompare(String(b.name.ja), "ja");
+  if (mode === "score-asc") return (a, b) => a.score - b.score;
+  if (mode === "niche-desc") {
+    const rank = { low: 3, medium: 2, high: 1, extreme: 0 };
+    return (a, b) => (rank[b.crowdLevel] || 0) - (rank[a.crowdLevel] || 0) || byScore(a, b);
+  }
+  if (mode === "traffic") return (a, b) => Number(a.access_minutes || 999) - Number(b.access_minutes || 999) || byScore(a, b);
+  if (mode === "name") return byName;
+  return byScore;
+}
+
+function travelCrowdLabel(level) {
+  return ({ low: "空いている", medium: "普通", high: "混雑", extreme: "超混雑" }[level] || "未分類");
+}
+
+function travelStyleLabel(style) {
+  return ({ day_trip: "日帰り", weekend: "週末", overnight: "宿泊" }[style] || style || "未分類");
+}
+
+function renderTravelDashboard(list) {
+  if (el.gradeChart) el.gradeChart.innerHTML = bars(countBy(list, (spot) => spot.grade), colorForGrade);
+  if (el.typeChart) {
+    el.typeChart.innerHTML = bars(countBy(list, (spot) => spot.primaryType.ja).slice(0, 8), (_, index) =>
+      ["#d85c8a", "#6a8bd7", "#2f9f8f", "#d49a3a"][index % 4],
+    );
+  }
+  if (!el.bestSpot) return;
+  const best = list[0];
+  if (!best) {
+    el.bestSpot.innerHTML = `<p class="empty">${escapeHtml(t("empty.noData"))}</p>`;
+    return;
+  }
+  const meta = TRAVEL_META[best.id] || {};
+  const imgSrc = meta.localImageUrl || meta.imageUrl || "";
+  el.bestSpot.innerHTML = `
+    ${imgSrc ? `<figure class="spot-photo spot-photo-best"><img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(localized(best.name))}" loading="lazy" /></figure>` : ""}
+    <h3>${escapeHtml(localized(best.name))}</h3>
+    <p class="spot-desc">${escapeHtml(localized(best.description))}</p>
+    <div class="score-line">
+      <div class="score">${escapeHtml(best.score)}</div>
+      <div class="score-track"><div class="score-fill" style="--score:${best.score}%"></div></div>
+      <strong>${escapeHtml(best.grade)}</strong>
+    </div>
+    <div class="tag-row">
+      <span class="tag">${escapeHtml(localized(best.prefecture))}</span>
+      <span class="tag">${escapeHtml(localized(best.primaryType))}</span>
+      <span class="tag">${escapeHtml(travelCrowdLabel(best.crowdLevel))}</span>
+    </div>
+  `;
+}
+
+function renderTravelTripPanel(list) {
+  const panel = document.querySelector("#tripContent");
+  if (!panel) return;
+  const picks = list.slice(0, 5);
+  if (!picks.length) {
+    panel.innerHTML = `<p class="trip-empty">${escapeHtml(t("empty.noData"))}</p>`;
+    return;
+  }
+  panel.innerHTML = `
+    <p class="trip-empty">旅行Noteは、現在の条件で候補を並べて比較できます。移動順ナビは次フェーズで撮影Noteと同じ仕組みに統合予定です。</p>
+    <ol class="trip-list">
+      ${picks.map((spot, index) => `
+        <li class="trip-item">
+          <span class="trip-num">${index + 1}</span>
+          <span class="trip-name">${escapeHtml(localized(spot.name))}</span>
+          <span class="trip-pref">${escapeHtml(spot.access_minutes || "-")}分 / ${escapeHtml(travelCrowdLabel(spot.crowdLevel))}</span>
+          <a class="trip-remove" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${spot.name.ja} ${spot.prefecture.ja}`)}" target="_blank" rel="noreferrer" title="${escapeHtml(t("map.open"))}">↗</a>
+        </li>
+      `).join("")}
+    </ol>
+  `;
 }
 
 // Travel filter chip UI (rendered above cards in travel mode)
@@ -2406,7 +2596,7 @@ function travelCardTemplate(spot) {
       <p>${escapeHtml(localized(spot.prefecture))} / ${escapeHtml(localized(spot.area))}</p>
     </div><span class="crowd-badge">${cemoji} ${clabel}</span></div>
     <div class="score-line"><div class="score">${spot.score}</div><div class="score-track"><div class="score-fill" style="--score:${spot.score}%"></div></div><strong>${spot.grade}</strong></div>
-    <div class="tag-row"><span class="tag grade-${grade}">${spot.grade}</span><span class="tag">${escapeHtml(localized(spot.primaryType))}</span><span class="tag">${spot.trip_style==='day_trip'?'日帰り':spot.trip_style==='weekend'?'週末':'宿泊'}</span></div>
+    <div class="tag-row"><span class="tag grade-${grade}">${spot.grade}</span><span class="tag">${escapeHtml(localized(spot.primaryType))}</span><span class="tag">${escapeHtml(travelStyleLabel(spot.trip_style))}</span></div>
     <p class="spot-desc">${escapeHtml(localized(spot.description))}</p>
     <div class="meta-grid"><div><span>静かな時間</span>${escapeHtml(spot.quiet_window||'-')}</div><div><span>ベスト</span>${escapeHtml(spot.best_season||'-')}</div><div><span>滞在</span>${'★'.repeat(Math.min(5,Math.round((spot.stay_density||0)/2)))}</div><div><span>ｱｸｾｽ</span>${spot.access_minutes||'-'}分</div></div>
     <div class="link-row">${(TRAVEL_REF_DATA[spot.id]||[]).map(r=>`<a class="source-link" href="${escapeHtml(r.url)}" target="_blank" rel="noreferrer">${escapeHtml(r.name)}</a>`).join("")}</div>

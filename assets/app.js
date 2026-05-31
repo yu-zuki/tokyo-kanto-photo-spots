@@ -1044,9 +1044,8 @@ function render() {
   el.mapWrap.classList.toggle("hidden", state.view !== "map");
   el.tripView.classList.toggle("hidden", state.view !== "trip");
   if (el.tripPanel) el.tripPanel.classList.toggle("hidden", isTravel && state.view !== "trip");
-  // Hide score toggle group in travel mode
   el.travelFilterBar.classList.toggle("hidden", !isTravel || state.view !== "cards");
-  el.scoreToggleGroup.classList.toggle("hidden", isTravel || state.view !== "cards");
+  el.scoreToggleGroup.classList.toggle("hidden", state.view !== "cards");
   if (state.view === "cards") {
     if (isTravel) { renderTravelFilters(); renderTravelCards(list); }
     else { renderCards(list); }
@@ -2461,16 +2460,33 @@ const TRAVEL_SCORE = [
 function inferTravelScore(source) {
   const explicit = Number(source.total);
   if (Number.isFinite(explicit) && explicit > 0) return explicit;
+  return Object.values(inferTravelScoreBreakdown(source)).reduce((sum, value) => sum + value, 0);
+}
+
+function inferTravelScoreBreakdown(source) {
+  const explicit = {
+    score_crowd: Number(source.score_crowd),
+    score_experience: Number(source.score_experience),
+    score_access: Number(source.score_access),
+    score_season: Number(source.score_season),
+    score_density: Number(source.score_density),
+    score_cost: Number(source.score_cost),
+    score_weather: Number(source.score_weather),
+    score_revisit: Number(source.score_revisit),
+  };
+  if (Object.values(explicit).every((value) => Number.isFinite(value))) return explicit;
   const crowd = { low: 30, medium: 22, high: 13, extreme: 6 }[source.crowd_level] || 18;
   const density = Math.max(0, Math.min(10, Number(source.stay_density) || 5));
-  const experience = Math.round(density * 2);
-  const access = { A: 15, B: 11, C: 7 }[source.access_level] || 9;
-  const season = source.best_season && !String(source.best_season).includes("特になし") ? 8 : 6;
-  const stay = Math.round(density);
-  const cost = { low: 5, medium: 4, high: 2 }[source.cost_level] || 3;
-  const weather = { low: 5, medium: 3, high: 1 }[source.weather_risk] || 3;
-  const revisit = source.trip_style === "weekend" || density >= 7 ? 5 : 4;
-  return Math.max(0, Math.min(100, crowd + experience + access + season + stay + cost + weather + revisit));
+  return {
+    score_crowd: crowd,
+    score_experience: Math.round(density * 2),
+    score_access: { A: 15, B: 11, C: 7 }[source.access_level] || 9,
+    score_season: source.best_season && !String(source.best_season).includes("特になし") ? 8 : 6,
+    score_density: Math.round(density),
+    score_cost: { low: 5, medium: 4, high: 2 }[source.cost_level] || 3,
+    score_weather: { low: 5, medium: 3, high: 1 }[source.weather_risk] || 3,
+    score_revisit: source.trip_style === "weekend" || density >= 7 ? 5 : 4,
+  };
 }
 
 function inferTravelGrade(score) {
@@ -2480,16 +2496,23 @@ function inferTravelGrade(score) {
   return "C";
 }
 
-const travelSpots = (TRAVEL_DATA.spots || []).map(s => ({
-  ...s, id: s.travel_id,
-  name: {ja: s.name_ja, zh: s.name_zh || s.name_ja},
-  prefecture: {ja: s.prefecture, zh: s.prefecture},
-  area: {ja: s.area, zh: s.area},
-  primaryType: {ja: s.primary_category, zh: TRAVEL_CATEGORY_ZH[s.primary_category] || s.primary_category},
-  score: inferTravelScore(s), grade: s.grade || inferTravelGrade(inferTravelScore(s)),
-  crowdLevel: s.crowd_level || "medium",
-  description: {ja: s.description_ja || "", zh: s.description_zh || ""},
-}));
+const travelSpots = (TRAVEL_DATA.spots || []).map((source) => {
+  const scoreBreakdown = inferTravelScoreBreakdown(source);
+  const score = Number(source.total) || Object.values(scoreBreakdown).reduce((sum, value) => sum + value, 0);
+  return {
+    ...source,
+    ...scoreBreakdown,
+    id: source.travel_id,
+    name: {ja: source.name_ja, zh: source.name_zh || source.name_ja},
+    prefecture: {ja: source.prefecture, zh: source.prefecture},
+    area: {ja: source.area, zh: source.area},
+    primaryType: {ja: source.primary_category, zh: TRAVEL_CATEGORY_ZH[source.primary_category] || source.primary_category},
+    score: Math.max(0, Math.min(100, score)),
+    grade: source.grade || inferTravelGrade(score),
+    crowdLevel: source.crowd_level || "medium",
+    description: {ja: source.description_ja || "", zh: source.description_zh || ""},
+  };
+});
 
 // Travel filter state
 const travelState = {
@@ -2725,6 +2748,10 @@ function travelCardTemplate(spot) {
     <p class="spot-desc">${escapeHtml(localized(spot.description))}</p>
     ${state.homePref ? `<div><span>🚃 ${state.homePref}から</span>${travelTimeStr(spot) || '-'}</div>` : ""}
     <div class="meta-grid"><div><span>静かな時間</span>${escapeHtml(spot.quiet_window||'-')}</div><div><span>ベスト</span>${escapeHtml(spot.best_season||'-')}</div><div><span>滞在</span>${'★'.repeat(Math.min(5,Math.round((spot.stay_density||0)/2)))}</div><div><span>ｱｸｾｽ</span>${spot.access_minutes||'-'}分</div></div>
+    <button class="score-toggle" type="button" data-toggle-score="${id}" aria-expanded="false" title="${escapeHtml(t("card.scoreBreakdown"))}">
+      ▸ ${escapeHtml(t("card.scoreBreakdown"))}
+    </button>
+    <div class="score-breakdown collapsed">${TRAVEL_SCORE.map((field) => miniScore(spot, field)).join("")}</div>
     <div class="link-row">${(TRAVEL_REF_DATA[spot.id]||[]).map(r=>`<a class="source-link" href="${escapeHtml(r.url)}" target="_blank" rel="noreferrer">${escapeHtml(r.name)}</a>`).join("")}</div>
   </article>`;}
 

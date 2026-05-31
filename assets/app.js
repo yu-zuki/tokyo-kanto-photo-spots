@@ -1052,8 +1052,8 @@ function cardTemplate(spot) {
         <div><span>${escapeHtml(t("card.niche"))}</span>${escapeHtml(spot.niche ?? "-")}</div>
       </div>
       ${tempInfo(spot)}
-      <button class="score-toggle" type="button" data-toggle-score="${id}" aria-expanded="false">
-        ${escapeHtml(t("card.scoreBreakdown"))} ▸
+      <button class="score-toggle" type="button" data-toggle-score="${id}" aria-expanded="false" title="${escapeHtml(t("card.scoreBreakdown"))}">
+        ▸ ${escapeHtml(t("card.scoreBreakdown"))}
       </button>
       <div class="score-breakdown collapsed">${scoreFields.map((field) => miniScore(spot, field)).join("")}</div>
       ${memoSection(spot)}
@@ -1634,7 +1634,7 @@ function bindEvents() {
       if (breakdown) {
         const collapsed = breakdown.classList.toggle("collapsed");
         scoreToggle.setAttribute("aria-expanded", !collapsed);
-        scoreToggle.innerHTML = `${t("card.scoreBreakdown")} ${collapsed ? "▸" : "▾"}`;
+        scoreToggle.innerHTML = `${collapsed ? "▸" : "▾"} ${t("card.scoreBreakdown")}`;
       }
       return;
     }
@@ -1643,14 +1643,14 @@ function bindEvents() {
     document.querySelectorAll(".score-breakdown").forEach(el => el.classList.remove("collapsed"));
     document.querySelectorAll("[data-toggle-score]").forEach(btn => {
       btn.setAttribute("aria-expanded", "true");
-      btn.innerHTML = `${t("card.scoreBreakdown")} ▾`;
+      btn.innerHTML = `▾ ${t("card.scoreBreakdown")}`;
     });
   });
   el.collapseAllScores.addEventListener("click", () => {
     document.querySelectorAll(".score-breakdown").forEach(el => el.classList.add("collapsed"));
     document.querySelectorAll("[data-toggle-score]").forEach(btn => {
       btn.setAttribute("aria-expanded", "false");
-      btn.innerHTML = `${t("card.scoreBreakdown")} ▸`;
+      btn.innerHTML = `▸ ${t("card.scoreBreakdown")}`;
     });
   });
   bindTableInteractions();
@@ -1765,6 +1765,7 @@ async function fetchWeather() {
     weatherCache = null;
   }
   renderWeather();
+  if (state.view === "cards") render(); // refresh cards to show tempInfo
 }
 
 function weatherIcon(code) {

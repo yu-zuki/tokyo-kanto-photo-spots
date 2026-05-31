@@ -1154,19 +1154,17 @@ td.score-cell {
 
 /* ---- Score Toggle ---- */
 .score-toggle {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  width: 100%;
-  padding: 0.3rem 0.5rem;
+  gap: 0.2rem;
+  padding: 0.2rem 0.4rem;
   border: none;
-  background: var(--paper);
+  background: none;
   color: var(--muted);
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: 0.72rem;
   cursor: pointer;
-  border-radius: 6px;
-  margin-top: 0.3rem;
+  border-radius: 4px;
+  margin-top: 0.35rem;
 }
 
 .score-toggle:hover {
@@ -1175,6 +1173,10 @@ td.score-cell {
 }
 
 /* ---- Score Breakdown Collapse ---- */
+.score-breakdown {
+  margin-top: 0.3rem;
+}
+
 .score-breakdown.collapsed {
   display: none;
 }
@@ -1186,13 +1188,12 @@ td.score-cell {
 }
 
 .score-toggle-group button {
-  padding: 0.25rem 0.6rem;
+  padding: 0.25rem 0.55rem;
   border: 1px solid var(--line);
   border-radius: 6px;
-  background: var(--paper);
+  background: var(--panel);
   color: var(--muted);
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: 0.7rem;
   cursor: pointer;
   white-space: nowrap;
 }

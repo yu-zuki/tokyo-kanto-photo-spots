@@ -1225,6 +1225,38 @@ td.score-cell {
   color: var(--teal);
 }
 
+.trip-actions {
+  display: flex;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+}
+
+.trip-copy {
+  flex: 1;
+  padding: 0.35rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.trip-copy:hover {
+  background: var(--teal-soft);
+  color: var(--teal);
+  border-color: var(--teal);
+}
+
+/* ---- Print ---- */
+@media print {
+  .sidebar, .toolbar, .view-toggle, .score-toggle-group, .trip-btn, .save-btn, .link-row, .memo-wrap, .score-toggle { display: none !important; }
+  .spot-card { break-inside: avoid; page-break-inside: avoid; box-shadow: none; border: 1px solid #ccc; }
+  body { background: #fff; }
+  .content { max-width: 100%; }
+}
+
 /* ---- Memo ---- */
 .memo-wrap {
   display: flex;

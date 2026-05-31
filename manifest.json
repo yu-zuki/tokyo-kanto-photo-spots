@@ -1,0 +1,19 @@
+{
+  "name": "東京・関東 撮影地ノート",
+  "short_name": "撮影地ノート",
+  "description": "東京・関東の撮影地260地点を検索・フィルタ・地図表示",
+  "start_url": "/tokyo-kanto-photo-spots/",
+  "scope": "/tokyo-kanto-photo-spots/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f3eee6",
+  "theme_color": "#2f6f67",
+  "icons": [
+    {
+      "src": "assets/photos/ganref/1.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ]
+}

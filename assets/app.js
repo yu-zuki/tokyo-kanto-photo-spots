@@ -2091,7 +2091,7 @@ function renderTripPanel() {
   }
   html += `</ol>`;
   // Show on map button
-  html += `<button class="trip-show-map" id="showTripOnMap" type="button">🗺 地図で見る</button>`;
+  html += `<div class="trip-actions"><button class="trip-show-map" id="showTripOnMap" type="button">🗺 地図</button><button class="trip-copy" id="copyTripPlan" type="button">📋 コピー</button></div>`;
   panel.innerHTML = html;
 
   // Bind map button
@@ -2099,6 +2099,19 @@ function renderTripPanel() {
   if (mapBtn) {
     mapBtn.addEventListener("click", () => {
       setView("map");
+    });
+  }
+  const copyBtn = document.querySelector("#copyTripPlan");
+  if (copyBtn) {
+    copyBtn.addEventListener("click", () => {
+      const lines = tripPlan.map((sid, i) => {
+        const spot = spots.find(s => s.id === sid);
+        return spot ? `${i + 1}. ${spot.name.ja}（${spot.prefecture.ja}）` : "";
+      }).filter(Boolean);
+      navigator.clipboard.writeText(lines.join("\n")).then(() => {
+        copyBtn.textContent = "✓ コピー完了";
+        setTimeout(() => { copyBtn.textContent = "📋 コピー"; }, 2000);
+      });
     });
   }
 }
@@ -2127,6 +2140,10 @@ function init() {
   bindEvents();
   render();
   fetchWeather(); // Kick off weather fetch
+  // Register service worker for offline support
+  if ("serviceWorker" in navigator && location.hostname !== "localhost") {
+    navigator.serviceWorker.register("sw.js");
+  }
 }
 
 init();

@@ -96,7 +96,9 @@ const UI_TEXT = {
     "card.expandAll": "全て展開",
     "card.collapseAll": "全て折畳",
     "card.tempRange": "適温",
-    "card.tempToday": "今日"
+    "card.tempToday": "今日",
+    "modules.photo": "📷 撮影",
+    "modules.travel": "🧳 旅行"
   },
   zh: {
     "app.title": "东京・关东摄影地笔记",
@@ -187,7 +189,9 @@ const UI_TEXT = {
     "card.expandAll": "全部展开",
     "card.collapseAll": "全部折叠",
     "card.tempRange": "适温",
-    "card.tempToday": "今天"
+    "card.tempToday": "今天",
+    "modules.photo": "📷 摄影",
+    "modules.travel": "🧳 旅行"
   },
 };
 
@@ -359,6 +363,7 @@ const state = {
   homePref: localStorage.getItem("photoSpotHomePref") || "",
   sort: "score-desc",
   view: "dashboard",
+  activeModule: localStorage.getItem("photoSpotActiveModule") || "photo",
 };
 
 if (!UI_TEXT[state.lang]) state.lang = "ja";
@@ -421,6 +426,8 @@ const el = {
   homePref: document.querySelector("#homePref"),
   tripContent: document.querySelector("#tripContent"),
   clearTrip: document.querySelector("#clearTrip"),
+  photoModuleBtn: document.querySelector("#photoModuleBtn"),
+  travelModuleBtn: document.querySelector("#travelModuleBtn"),
 };
 
 const spots = rawSpots.map(normalizeSpot);
@@ -1015,19 +1022,21 @@ function sorter(mode) {
 }
 
 function render() {
-  const list = filteredSpots();
+  const isTravel = state.activeModule === "travel";
+  const list = isTravel ? travelSpots : filteredSpots();
   el.resultCount.textContent = list.length;
   el.savedCount.textContent = saved.size;
-  renderCharts(list);
-  renderBest(list);
-  renderTripPanel();
+  el.totalCount.textContent = isTravel ? travelSpots.length : spots.length;
+  if (!isTravel) { renderCharts(list); renderBest(list); renderTripPanel(); }
+  else { renderCharts([]); renderBest([]); }
   el.dashboardView.classList.toggle("hidden", state.view !== "dashboard");
   el.cards.classList.toggle("hidden", state.view !== "cards");
   el.tableWrap.classList.toggle("hidden", state.view !== "table");
   el.mapWrap.classList.toggle("hidden", state.view !== "map");
   el.tripView.classList.toggle("hidden", state.view !== "trip");
   if (state.view === "cards") {
-    renderCards(list);
+    if (isTravel) { renderTravelCards(list); }
+    else { renderCards(list); }
   } else if (state.view === "table") {
     renderTable(list);
   } else if (state.view === "map") {
@@ -1061,6 +1070,14 @@ function photoFigure(spot, size = "card") {
       <figcaption>${escapeHtml(caption)}</figcaption>
     </figure>
   `;
+}
+
+function renderTravelCards(list) {
+  if (!list.length) {
+    el.cards.innerHTML = `<div class="panel empty">${escapeHtml(t("empty.noResults"))}</div>`;
+    return;
+  }
+  el.cards.innerHTML = list.map(travelCardTemplate).join("");
 }
 
 function renderCards(list) {
@@ -1708,6 +1725,8 @@ function bindMultiFilter(container, selectedSet) {
 function bindEvents() {
   if (el.langJa) el.langJa.addEventListener("click", () => setLanguage("ja"));
   if (el.langZh) el.langZh.addEventListener("click", () => setLanguage("zh"));
+  if (el.photoModuleBtn) el.photoModuleBtn.addEventListener("click", () => switchModule("photo"));
+  if (el.travelModuleBtn) el.travelModuleBtn.addEventListener("click", () => switchModule("travel"));
   el.searchInput.addEventListener("input", (event) => {
     state.search = event.target.value;
     render();
@@ -1882,6 +1901,15 @@ function bindTableInteractions() {
     saveTableColumns();
     renderTable(filteredSpots());
   });
+}
+
+function switchModule(module) {
+  if (state.activeModule === module) return;
+  state.activeModule = module;
+  localStorage.setItem("photoSpotActiveModule", module);
+  el.photoModuleBtn.classList.toggle("active", module === "photo");
+  el.travelModuleBtn.classList.toggle("active", module === "travel");
+  render();
 }
 
 function setView(view) {
@@ -2213,6 +2241,49 @@ function travelTimeStrBetween(fromId, toId) {
   if (mins < 10) return "→";
   return `🚃${mins}分→`;
 }
+
+// ===== Travel Note Module =====
+const TRAVEL_DATA = window.TRAVEL_DATA || { spots: [] };
+const TRAVEL_LOCS = window.TRAVEL_LOCATIONS || { locations: {} };
+const TRAVEL_REF_DATA = window.TRAVEL_REFS || {};
+
+const TRAVEL_CATEGORY_ZH = {"山・高原":"山·高原","海・島":"海·岛","湖・湿原":"湖·湿原","滝・渓谷":"瀑布·溪谷","古い町並み":"古街","温泉":"温泉","寺社":"寺社","公園・庭園":"公园·庭园","美術館・博物館":"美术馆·博物馆","宿場町":"宿场町","牧場・農園":"牧场·农园","テーマ施設":"主题设施","商店街・市場":"商店街·市场","絶景道路":"绝景道路","ローカル鉄道":"地方铁道"};
+
+const TRAVEL_SCORE = [
+  [{ja:"人少",zh:"人流"}, "score_crowd", 30], [{ja:"体験",zh:"体验"}, "score_experience", 20],
+  [{ja:"交通",zh:"交通"}, "score_access", 15], [{ja:"季節",zh:"季节"}, "score_season", 10],
+  [{ja:"滞在",zh:"停留"}, "score_density", 10], [{ja:"ｺｽﾄ",zh:"成本"}, "score_cost", 5],
+  [{ja:"天候",zh:"天气"}, "score_weather", 5], [{ja:"再訪",zh:"重访"}, "score_revisit", 5],
+];
+
+const travelSpots = (TRAVEL_DATA.spots || []).map(s => ({
+  ...s, id: s.travel_id,
+  name: {ja: s.name_ja, zh: s.name_zh || s.name_ja},
+  prefecture: {ja: s.prefecture, zh: s.prefecture},
+  area: {ja: s.area, zh: s.area},
+  primaryType: {ja: s.primary_category, zh: TRAVEL_CATEGORY_ZH[s.primary_category] || s.primary_category},
+  score: s.total || 0, grade: s.grade || "C",
+  crowdLevel: s.crowd_level || "medium",
+  description: {ja: s.description_ja || "", zh: s.description_zh || ""},
+}));
+
+function travelCardTemplate(spot) {
+  const id = spot.id; const grade = String(spot.grade||"").toLowerCase();
+  const CROWD = {low:["🟢","空いている"], medium:["🟡","普通"], high:["🟠","混雑"], extreme:["🔴","超混雑"]};
+  const [cemoji, clabel] = CROWD[spot.crowdLevel] || ["⚪",""];
+  return `<article class="spot-card travel-card">
+    <div class="spot-head"><div class="spot-title">
+      <h3>${escapeHtml(localized(spot.name))}</h3>
+      <p>${escapeHtml(localized(spot.prefecture))} / ${escapeHtml(localized(spot.area))}</p>
+    </div><span class="crowd-badge">${cemoji} ${clabel}</span></div>
+    <div class="score-line"><div class="score">${spot.score}</div><div class="score-track"><div class="score-fill" style="--score:${spot.score}%"></div></div><strong>${spot.grade}</strong></div>
+    <div class="tag-row"><span class="tag grade-${grade}">${spot.grade}</span><span class="tag">${escapeHtml(localized(spot.primaryType))}</span><span class="tag">${spot.trip_style==='day_trip'?'日帰り':spot.trip_style==='weekend'?'週末':'宿泊'}</span></div>
+    <p class="spot-desc">${escapeHtml(localized(spot.description))}</p>
+    <div class="meta-grid"><div><span>静かな時間</span>${escapeHtml(spot.quiet_window||'-')}</div><div><span>ベスト</span>${escapeHtml(spot.best_season||'-')}</div><div><span>滞在</span>${'★'.repeat(Math.min(5,Math.round((spot.stay_density||0)/2)))}</div><div><span>ｱｸｾｽ</span>${spot.access_minutes||'-'}分</div></div>
+    <div class="link-row">${(TRAVEL_REF_DATA[spot.id]||[]).map(r=>`<a class="source-link" href="${escapeHtml(r.url)}" target="_blank" rel="noreferrer">${escapeHtml(r.name)}</a>`).join("")}</div>
+  </article>`;}
+
+// ===== End Travel Note Module =====
 
 function init() {
   applyStaticLanguage();

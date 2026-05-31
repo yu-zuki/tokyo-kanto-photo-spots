@@ -2497,6 +2497,8 @@ const travelState = {
   category: new Set(),
   crowd: new Set(),
   tripStyle: new Set(),
+  vibe: new Set(),       // solo/date/family
+  weatherOk: false,       // 雨でも成立 only
   minScore: 0,
 };
 
@@ -2506,6 +2508,11 @@ function filteredTravelSpots() {
     if (travelState.category.size > 0 && !travelState.category.has(s.primaryType.ja)) return false;
     if (travelState.crowd.size > 0 && !travelState.crowd.has(s.crowdLevel)) return false;
     if (travelState.tripStyle.size > 0 && !travelState.tripStyle.has(s.trip_style)) return false;
+    if (travelState.vibe.size > 0) {
+      const match = [...travelState.vibe].some(v => s[v] === true);
+      if (!match) return false;
+    }
+    if (travelState.weatherOk && s.weather_risk !== "low") return false;
     if (s.score < travelState.minScore) return false;
     return true;
   }).sort(travelSorter(state.sort));
@@ -2669,6 +2676,12 @@ function renderTravelFilters() {
   html += '<div class="tl-row"><span>分類</span>' + cats.map(c => chip(travelState.category, c, c)).join('') + '</div>';
   html += '<div class="tl-row"><span>混雑</span>' + crowds.map(c => chip(travelState.crowd, c, crowdLabels[c])).join('') + '</div>';
   html += '<div class="tl-row"><span>日帰/週末</span>' + styles.map(s => chip(travelState.tripStyle, s, styleLabels[s])).join('');
+  html += '<div class="tl-row"><span>おすすめ</span>';
+  html += chip(travelState.vibe, 'solo_friendly', '🧑 独旅');
+  html += chip(travelState.vibe, 'date_friendly', '💑 デート');
+  html += chip(travelState.vibe, 'family_friendly', '👨‍👩‍👧 家族');
+  html += '</div>';
+  html += `<div class="tl-row"><label class="tl-check"><input type="checkbox" id="tlWeatherOk" ${travelState.weatherOk ? 'checked' : ''} /> 雨でも成立のみ</label>`;
   html += `<label class="tl-score"><span>最低点</span><input type="range" min="0" max="100" value="${travelState.minScore}" id="tlMinScore" /><b>${travelState.minScore}</b></label>`;
   html += '</div></div>';
   el.travelFilterBar.innerHTML = html;
@@ -2678,7 +2691,7 @@ function renderTravelFilters() {
     btn.addEventListener('click', () => {
       const setKey = btn.dataset.tlSet;
       const val = btn.dataset.tlVal;
-      const set = setKey === 'pref' ? travelState.pref : setKey === 'cat' ? travelState.category : setKey === 'crowd' ? travelState.crowd : travelState.tripStyle;
+      const set = setKey === 'pref' ? travelState.pref : setKey === 'cat' ? travelState.category : setKey === 'crowd' ? travelState.crowd : setKey === 'style' ? travelState.tripStyle : travelState.vibe;
       if (set.has(val)) set.delete(val); else set.add(val);
       render();
     });
@@ -2686,6 +2699,11 @@ function renderTravelFilters() {
   const scoreSlider = el.travelFilterBar.querySelector('#tlMinScore');
   if (scoreSlider) scoreSlider.addEventListener('input', () => {
     travelState.minScore = Number(scoreSlider.value);
+    render();
+  });
+  const weatherCb = el.travelFilterBar.querySelector('#tlWeatherOk');
+  if (weatherCb) weatherCb.addEventListener('change', () => {
+    travelState.weatherOk = weatherCb.checked;
     render();
   });
 }

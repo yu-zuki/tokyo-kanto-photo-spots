@@ -1798,6 +1798,16 @@ td.score-cell {
 
 .tl-chip:hover { border-color: var(--pink); }
 
+.tl-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: var(--ink);
+  cursor: pointer;
+}
+.tl-check input { accent-color: var(--pink); width: 16px; height: 16px; }
+
 .tl-score {
   display: flex;
   align-items: center;

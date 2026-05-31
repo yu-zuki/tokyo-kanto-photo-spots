@@ -1060,11 +1060,21 @@ function weatherBadge(spot) {
   if (ws.rainScore > 0) parts.push(`${ws.rain}%`);
   parts.push(`${ws.high}°C`);
 
+  // Add sunrise/sunset for this spot's prefecture
+  let sunInfo = "";
+  const pref = spot.prefecture.ja.split("・")[0];
+  const fc = weatherCache.forecasts[pref];
+  if (fc && fc.sunrise && fc.sunrise.length > 0) {
+    const sr = fc.sunrise[0].slice(11, 16);
+    const ss = fc.sunset[0].slice(11, 16);
+    sunInfo = ` ↑${sr} ↓${ss}`;
+  }
+
   return `
-    <div class="weather-badge badge-${lvl}" title="${icons[lvl]} ${labels[lvl]}: 天気${ws.codeScore} + 降水${ws.rainScore} + 気温${ws.tempScore} = ${ws.score}点">
+    <div class="weather-badge badge-${lvl}" title="${icons[lvl]} ${labels[lvl]}: 天气${ws.codeScore} + 降水${ws.rainScore} + 气温${ws.tempScore} = ${ws.score}点">
       <span class="badge-icon">${icons[lvl]}</span>
       <span class="badge-label">${labels[lvl]}</span>
-      <span class="badge-detail">${parts.join(" · ")}</span>
+      <span class="badge-detail">${parts.join(" · ")}${sunInfo}</span>
     </div>`;
 }
 
@@ -1898,14 +1908,6 @@ function renderWeather() {
       </div>`;
     }
     html += `</div></div>`;
-  }
-
-  // Sunrise/sunset for Tokyo (first prefecture)
-  const tokyoFc = forecasts["東京都"];
-  if (tokyoFc && tokyoFc.sunrise && tokyoFc.sunrise.length > 0) {
-    const sr = tokyoFc.sunrise[0].slice(11, 16); // "2026-05-31T04:27" → "04:27"
-    const ss = tokyoFc.sunset[0].slice(11, 16);
-    html += `<p class="weather-sun">☀️ ${sr} ↑ / ${ss} ↓</p>`;
   }
 
   const ago = Math.round((Date.now() - updated) / 60000);

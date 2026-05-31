@@ -971,3 +971,144 @@ td.score-cell {
     min-height: 460px;
   }
 }
+
+/* ---- Weather Panel ---- */
+.weather-content {
+  font-size: 0.82rem;
+}
+
+.weather-loading {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.weather-pref-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.weather-pref-row strong {
+  min-width: 3.2em;
+  font-size: 0.78rem;
+  color: var(--ink);
+  padding-top: 0.15rem;
+}
+
+.weather-days {
+  display: flex;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.weather-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0.2rem 0.35rem;
+  border-radius: 6px;
+  background: var(--paper);
+  min-width: 3.8em;
+}
+
+.weather-day.weekend {
+  background: var(--teal-soft);
+}
+
+.w-label {
+  font-size: 0.65rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.w-icon {
+  font-size: 0.95rem;
+}
+
+.w-temp {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.w-rain {
+  font-size: 0.65rem;
+  color: var(--blue);
+}
+
+.weather-updated {
+  font-size: 0.65rem;
+  color: var(--muted);
+  text-align: right;
+  margin: 0.3rem 0 0;
+}
+
+/* ---- Season Badge ---- */
+.season-badge {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  z-index: 2;
+}
+
+.season-badge.in-season {
+  background: var(--teal);
+  color: #fff;
+}
+
+.season-row {
+  margin-top: 0.25rem;
+}
+
+/* ---- Memo ---- */
+.memo-wrap {
+  display: flex;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--line);
+}
+
+.memo-input {
+  flex: 1;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-family: inherit;
+  background: var(--paper);
+  color: var(--ink);
+  resize: vertical;
+  min-height: 2.2em;
+}
+
+.memo-input:focus {
+  outline: none;
+  border-color: var(--teal);
+  box-shadow: 0 0 0 2px var(--teal-soft);
+}
+
+.memo-save-btn {
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--teal);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  align-self: flex-start;
+}
+
+.memo-save-btn:hover {
+  background: var(--teal);
+  color: #fff;
+  border-color: var(--teal);
+}

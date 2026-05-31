@@ -65,7 +65,19 @@ const UI_TEXT = {
     "map.precisionVerifiedLabel": "実座標/検索座標",
     "common.points": "点",
     "common.rank": "ランク",
-    "common.unclassified": "未分類"
+    "common.unclassified": "未分類",
+    "filters.seasonNow": "今が見頃のみ",
+    "sections.weather": "週末の天気",
+    "weather.loading": "読み込み中...",
+    "weather.error": "取得できませんでした",
+    "weather.refresh": "天気を更新",
+    "weather.high": "最高",
+    "weather.low": "最低",
+    "weather.rain": "降水",
+    "weather.updated": "更新",
+    "memo.placeholder": "メモを追加...",
+    "memo.save": "保存",
+    "memo.edit": "編集"
   },
   zh: {
     "app.title": "东京・关东摄影地笔记",
@@ -125,7 +137,19 @@ const UI_TEXT = {
     "map.precisionVerifiedLabel": "实坐标/搜索坐标",
     "common.points": "分",
     "common.rank": "等级",
-    "common.unclassified": "未分类"
+    "common.unclassified": "未分类",
+    "filters.seasonNow": "仅看当季推荐",
+    "sections.weather": "周末天气",
+    "weather.loading": "加载中...",
+    "weather.error": "获取失败",
+    "weather.refresh": "刷新天气",
+    "weather.high": "最高",
+    "weather.low": "最低",
+    "weather.rain": "降水",
+    "weather.updated": "更新于",
+    "memo.placeholder": "添加备注...",
+    "memo.save": "保存",
+    "memo.edit": "编辑"
   },
 };
 
@@ -291,6 +315,7 @@ const state = {
   time: new Set(),
   minScore: 0,
   savedOnly: false,
+  seasonNow: false,
   sort: "score-desc",
   view: "cards",
 };
@@ -298,6 +323,8 @@ const state = {
 if (!UI_TEXT[state.lang]) state.lang = "ja";
 
 const saved = new Set(JSON.parse(localStorage.getItem("photoSpotSaved") || "[]"));
+const memos = JSON.parse(localStorage.getItem("photoSpotMemos") || "{}");
+let weatherCache = null; // { updated, forecasts: { prefJa: { high, low, rain, icon } } }
 let tableColumns = loadTableColumns();
 let mapRuntime = { provider: null, map: null, layer: null, markers: [], infoWindow: null };
 let mapRenderToken = 0;
@@ -336,6 +363,9 @@ const el = {
   mapPrecision: document.querySelector("#mapPrecision"),
   langJa: document.querySelector("#langJa"),
   langZh: document.querySelector("#langZh"),
+  seasonNow: document.querySelector("#seasonNow"),
+  weatherContent: document.querySelector("#weatherContent"),
+  refreshWeather: document.querySelector("#refreshWeather"),
 };
 
 const spots = rawSpots.map(normalizeSpot);
@@ -366,7 +396,47 @@ function normalizeSpot(raw) {
     grade: raw["候选等级"],
     score: Number(raw["总分100"] || 0),
     niche: raw["小众/可发挥参考"],
+    seasonMonths: parseSeasonMonths(raw["最佳季节/时间"]),
   };
+}
+
+function parseSeasonMonths(seasonText) {
+  if (!seasonText) return [];
+  const text = String(seasonText);
+  const months = new Set();
+  // Parse patterns like: 3-5月, 10-12月, 4月上旬-5月, 通年, 春, 秋
+  const rangeRe = /(\d+)\s*[月\-~～]\s*(\d+)\s*月?/g;
+  let match;
+  while ((match = rangeRe.exec(text)) !== null) {
+    const start = parseInt(match[1], 10);
+    const end = parseInt(match[2], 10);
+    for (let m = start; m <= end; m++) months.add(m);
+  }
+  // Single month mentions
+  const singleRe = /(\d+)\s*月/g;
+  while ((match = singleRe.exec(text)) !== null) {
+    months.add(parseInt(match[1], 10));
+  }
+  // Season keywords → months
+  const seasonMap = {
+    "春": [3,4,5], "夏": [6,7,8], "秋": [9,10,11], "冬": [12,1,2],
+    "桜": [3,4], "紅葉": [10,11,12], "紫陽花": [6,7],
+    "雪": [12,1,2], "新緑": [5,6], "梅": [2,3],
+    "藤": [4,5], "彼岸花": [9], "菜の花": [3,4],
+    "花火": [7,8], "イルミ": [11,12], "初詣": [1],
+  };
+  for (const [keyword, ms] of Object.entries(seasonMap)) {
+    if (text.includes(keyword)) ms.forEach(m => months.add(m));
+  }
+  // 通年 = all year
+  if (text.includes("通年")) for (let m = 1; m <= 12; m++) months.add(m);
+  return [...months].sort((a, b) => a - b);
+}
+
+function isSpotInSeasonNow(spot) {
+  const now = new Date();
+  const currentMonth = now.getMonth() + 1; // 1-12
+  return spot.seasonMonths.length === 0 || spot.seasonMonths.includes(currentMonth);
 }
 
 function loadTableColumns() {
@@ -805,6 +875,7 @@ function filteredSpots() {
     .filter((spot) => matchesSet(state.time, spot.time.ja))
     .filter((spot) => spot.score >= state.minScore)
     .filter((spot) => !state.savedOnly || saved.has(spot.id))
+    .filter((spot) => !state.seasonNow || isSpotInSeasonNow(spot))
     .sort(sorter(state.sort));
 }
 
@@ -883,6 +954,7 @@ function cardTemplate(spot) {
   return `
     <article class="spot-card">
       ${photoFigure(spot)}
+      ${seasonBadge(spot)}
       <div class="spot-head">
         <div class="spot-title">
           <h3>${escapeHtml(localized(spot.name))}</h3>
@@ -909,6 +981,7 @@ function cardTemplate(spot) {
         <div><span>${escapeHtml(t("card.niche"))}</span>${escapeHtml(spot.niche ?? "-")}</div>
       </div>
       <div class="score-breakdown">${scoreFields.map((field) => miniScore(spot, field)).join("")}</div>
+      ${memoSection(spot)}
       <div class="link-row">${linkButtons(spot)}</div>
     </article>
   `;
@@ -1422,6 +1495,15 @@ function bindEvents() {
     state.savedOnly = event.target.checked;
     render();
   });
+  el.seasonNow.addEventListener("change", (event) => {
+    state.seasonNow = event.target.checked;
+    render();
+  });
+  el.refreshWeather.addEventListener("click", () => {
+    weatherCache = null;
+    renderWeather();
+    fetchWeather();
+  });
   el.sortSelect.addEventListener("change", (event) => {
     state.sort = event.target.value;
     render();
@@ -1432,7 +1514,22 @@ function bindEvents() {
   el.mapViewBtn.addEventListener("click", () => setView("map"));
   document.addEventListener("click", (event) => {
     const saveButton = event.target.closest("[data-save]");
-    if (saveButton) updateSaved(saveButton.dataset.save);
+    if (saveButton) {
+      updateSaved(saveButton.dataset.save);
+      return;
+    }
+    const memoSaveBtn = event.target.closest("[data-memo-save]");
+    if (memoSaveBtn) {
+      const spotId = memoSaveBtn.dataset.memoSave;
+      const textarea = document.querySelector(`textarea[data-memo="${spotId}"]`);
+      if (textarea) {
+        memos[spotId] = textarea.value;
+        saveMemos();
+        memoSaveBtn.textContent = "✓";
+        setTimeout(() => { memoSaveBtn.textContent = t("memo.save"); }, 1000);
+      }
+      return;
+    }
   });
   bindTableInteractions();
 }
@@ -1444,6 +1541,7 @@ function setLanguage(lang) {
   applyStaticLanguage();
   renderScoringModel();
   renderPhotoSites();
+  renderWeather();
   syncControls();
   render();
 }
@@ -1502,6 +1600,141 @@ function setView(view) {
   render();
 }
 
+// ---- Weather (Open-Meteo free API, no key) ----
+const PREF_CENTERS = {
+  "東京都": { lat: 35.68, lon: 139.75 },
+  "千葉県": { lat: 35.60, lon: 140.12 },
+  "神奈川県": { lat: 35.45, lon: 139.64 },
+  "埼玉県": { lat: 35.96, lon: 139.39 },
+  "茨城県": { lat: 36.34, lon: 140.45 },
+  "栃木県": { lat: 36.57, lon: 139.88 },
+  "群馬県": { lat: 36.39, lon: 139.06 },
+  "山梨県": { lat: 35.66, lon: 138.57 },
+  "静岡県": { lat: 34.92, lon: 138.32 },
+};
+
+async function fetchWeather() {
+  const latStr = Object.values(PREF_CENTERS).map(c => c.lat).join(",");
+  const lonStr = Object.values(PREF_CENTERS).map(c => c.lon).join(",");
+  const prefKeys = Object.keys(PREF_CENTERS);
+
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${latStr}&longitude=${lonStr}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia/Tokyo&forecast_days=3`;
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error("API error");
+    const data = await resp.json();
+
+    const forecasts = {};
+    // Open-Meteo returns arrays per lat/lon, matching our order
+    for (let i = 0; i < prefKeys.length; i++) {
+      const daily = {
+        dates: data[i]?.daily?.time || [],
+        high: data[i]?.daily?.temperature_2m_max || [],
+        low: data[i]?.daily?.temperature_2m_min || [],
+        rain: data[i]?.daily?.precipitation_probability_max || [],
+        code: data[i]?.daily?.weather_code || [],
+      };
+      forecasts[prefKeys[i]] = daily;
+    }
+    weatherCache = { updated: Date.now(), forecasts };
+  } catch (e) {
+    console.warn("Weather fetch failed:", e);
+    weatherCache = null;
+  }
+  renderWeather();
+}
+
+function weatherIcon(code) {
+  if (code <= 1) return "☀️";
+  if (code <= 3) return "⛅";
+  if (code <= 48) return "☁️";
+  if (code <= 57) return "🌧️";
+  if (code <= 67) return "🌨️";
+  if (code <= 77) return "❄️";
+  if (code <= 82) return "🌧️";
+  return "⛈️";
+}
+
+function renderWeather() {
+  if (!el.weatherContent) return;
+  if (!weatherCache || !weatherCache.forecasts) {
+    el.weatherContent.innerHTML = `<p class="weather-loading">${escapeHtml(t("weather.loading"))}</p>`;
+    return;
+  }
+
+  const { updated, forecasts } = weatherCache;
+  const prefNames = Object.keys(forecasts);
+  const today = new Date();
+
+  let html = "";
+  for (const pref of prefNames) {
+    const f = forecasts[pref];
+    if (!f || !f.dates || f.dates.length < 2) continue;
+
+    // Get weekend dates (Saturday & Sunday)
+    const dayNames = ["日", "月", "火", "水", "木", "金", "土"];
+    const days = [];
+    for (let i = 0; i < Math.min(f.dates.length, 3); i++) {
+      const d = new Date(f.dates[i] + "T00:00:00");
+      const dayName = dayNames[d.getDay()];
+      const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+      days.push({
+        label: `${d.getMonth() + 1}/${d.getDate()}(${dayName})`,
+        high: Math.round(f.high[i] || 0),
+        low: Math.round(f.low[i] || 0),
+        rain: f.rain[i] != null ? Math.round(f.rain[i]) : null,
+        icon: weatherIcon(f.code[i]),
+        isWeekend,
+      });
+    }
+
+    // Display first 2-3 days (Fri-Sun for weekend planning)
+    const displayDays = days.slice(-3);
+    if (displayDays.length === 0) continue;
+
+    html += `<div class="weather-pref-row">
+      <strong>${escapeHtml(pref.replace("県","").replace("都",""))}</strong>
+      <div class="weather-days">`;
+    for (const day of displayDays) {
+      html += `<div class="weather-day${day.isWeekend ? " weekend" : ""}">
+        <span class="w-label">${escapeHtml(day.label)}</span>
+        <span class="w-icon">${day.icon}</span>
+        <span class="w-temp">${day.high}°</span>
+        ${day.rain != null ? `<span class="w-rain">${day.rain}%</span>` : ""}
+      </div>`;
+    }
+    html += `</div></div>`;
+  }
+
+  const ago = Math.round((Date.now() - updated) / 60000);
+  html += `<p class="weather-updated">${escapeHtml(t("weather.updated"))}: ${ago}分前</p>`;
+  el.weatherContent.innerHTML = html;
+}
+
+// ---- Memo (localStorage-backed per-spot notes) ----
+function saveMemos() {
+  localStorage.setItem("photoSpotMemos", JSON.stringify(memos));
+}
+
+function memoSection(spot) {
+  const id = spot.id;
+  const existing = memos[id] || "";
+  const escaped = escapeHtml(existing);
+  return `
+    <div class="memo-wrap" data-spot="${id}">
+      <textarea class="memo-input" placeholder="${escapeHtml(t("memo.placeholder"))}" rows="2" data-memo="${id}">${escaped}</textarea>
+      <button class="memo-save-btn" type="button" data-memo-save="${id}">${escapeHtml(t("memo.save"))}</button>
+    </div>
+  `;
+}
+
+// ---- Season badge for cards ----
+function seasonBadge(spot) {
+  if (spot.seasonMonths.length === 0) return "";
+  const inSeason = isSpotInSeasonNow(spot);
+  return `<span class="season-badge ${inSeason ? "in-season" : ""}">${inSeason ? "今が見頃" : ""}</span>`;
+}
+
 function init() {
   applyStaticLanguage();
   el.totalCount.textContent = spots.length;
@@ -1511,6 +1744,7 @@ function init() {
   syncControls();
   bindEvents();
   render();
+  fetchWeather(); // Kick off weather fetch
 }
 
 init();

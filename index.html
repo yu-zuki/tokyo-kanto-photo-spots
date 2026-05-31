@@ -70,6 +70,21 @@
             <input id="savedOnly" type="checkbox" />
             <span data-i18n="filters.savedOnly">保存済みのみ</span>
           </label>
+
+          <label class="check-row season-row">
+            <input id="seasonNow" type="checkbox" />
+            <span data-i18n="filters.seasonNow">今が見頃のみ</span>
+          </label>
+        </section>
+
+        <section class="panel weather-panel" id="weatherPanel">
+          <div class="panel-title">
+            <h2 data-i18n="sections.weather">週末の天気</h2>
+            <button class="icon-button" id="refreshWeather" type="button" title="更新" aria-label="天気を更新">↻</button>
+          </div>
+          <div id="weatherContent" class="weather-content">
+            <p class="weather-loading" data-i18n="weather.loading">読み込み中...</p>
+          </div>
         </section>
 
         <section class="panel">

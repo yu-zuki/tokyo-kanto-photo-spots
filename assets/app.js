@@ -67,6 +67,7 @@ const UI_TEXT = {
     "common.rank": "ランク",
     "common.unclassified": "未分類",
     "filters.seasonNow": "今が見頃のみ",
+    "filters.weatherMatch": "天気に合う場所のみ",
     "sections.weather": "週末の天気",
     "weather.loading": "読み込み中...",
     "weather.error": "取得できませんでした",
@@ -139,6 +140,7 @@ const UI_TEXT = {
     "common.rank": "等级",
     "common.unclassified": "未分类",
     "filters.seasonNow": "仅看当季推荐",
+    "filters.weatherMatch": "只看天气合适的地点",
     "sections.weather": "周末天气",
     "weather.loading": "加载中...",
     "weather.error": "获取失败",
@@ -316,6 +318,7 @@ const state = {
   minScore: 0,
   savedOnly: false,
   seasonNow: false,
+  weatherMatch: false,
   sort: "score-desc",
   view: "cards",
 };
@@ -364,6 +367,7 @@ const el = {
   langJa: document.querySelector("#langJa"),
   langZh: document.querySelector("#langZh"),
   seasonNow: document.querySelector("#seasonNow"),
+  weatherMatch: document.querySelector("#weatherMatch"),
   weatherContent: document.querySelector("#weatherContent"),
   refreshWeather: document.querySelector("#refreshWeather"),
 };
@@ -876,6 +880,7 @@ function filteredSpots() {
     .filter((spot) => spot.score >= state.minScore)
     .filter((spot) => !state.savedOnly || saved.has(spot.id))
     .filter((spot) => !state.seasonNow || isSpotInSeasonNow(spot))
+    .filter((spot) => !state.weatherMatch || isWeatherGoodForSpot(spot))
     .sort(sorter(state.sort));
 }
 
@@ -1457,6 +1462,8 @@ function syncControls() {
   el.minScore.value = state.minScore;
   el.minScoreValue.textContent = state.minScore;
   el.savedOnly.checked = state.savedOnly;
+  el.seasonNow.checked = state.seasonNow;
+  el.weatherMatch.checked = state.weatherMatch;
   el.sortSelect.value = state.sort;
   syncFilters();
 }
@@ -1497,6 +1504,10 @@ function bindEvents() {
   });
   el.seasonNow.addEventListener("change", (event) => {
     state.seasonNow = event.target.checked;
+    render();
+  });
+  el.weatherMatch.addEventListener("change", (event) => {
+    state.weatherMatch = event.target.checked;
     render();
   });
   el.refreshWeather.addEventListener("click", () => {
@@ -1709,6 +1720,56 @@ function renderWeather() {
   const ago = Math.round((Date.now() - updated) / 60000);
   html += `<p class="weather-updated">${escapeHtml(t("weather.updated"))}: ${ago}分前</p>`;
   el.weatherContent.innerHTML = html;
+}
+
+// ---- Weather-based spot type matching ----
+// Weather code → weather class
+// Open-Meteo codes: 0=clear, 1-3=partly cloudy, 45-48=fog, 51-67=rain, 71-77=snow, 80-82=showers, 95-99=thunderstorm
+function weatherClassForCode(code) {
+  if (code === 0) return "fine";           // Clear sky
+  if (code <= 3) return "cloudy";          // Partly cloudy
+  if (code <= 48) return "cloudy";         // Foggy
+  if (code <= 67) return "rain";           // Rain/drizzle
+  if (code <= 77) return "rain";           // Snow (treat like rain for photography)
+  if (code <= 82) return "rain";           // Rain showers
+  return "storm";                           // Thunderstorm
+}
+
+// Spot type categories suitable for each weather
+const WEATHER_SPOT_MAP = {
+  fine:    ["海岸", "展望・山岳", "庭園・花", "渓谷・滝", "湖沼・湿地", "富士山", "鉄道・航空機"],
+  cloudy:  ["海岸", "展望・山岳", "庭園・花", "渓谷・滝", "湖沼・湿地", "街歩き", "寺社", "歴史・遺構", "鉄道・航空機", "都市夜景"],
+  rain:    ["寺社", "都市夜景", "街歩き", "歴史・遺構", "鉄道・航空機", "動物・テーマ施設", "工場夜景"],
+  storm:   ["寺社", "都市夜景", "歴史・遺構", "動物・テーマ施設"],
+};
+
+function isWeatherGoodForSpot(spot) {
+  if (!weatherCache || !weatherCache.forecasts) return true; // No weather data, show all
+  const prefJa = spot.prefecture.ja;
+  // Handle multi-prefecture spots (e.g. "東京/埼玉")
+  const prefs = prefJa.split("・");
+
+  // Get today's weather for the first matching prefecture
+  for (const pref of prefs) {
+    const forecast = weatherCache.forecasts[pref];
+    if (!forecast || !forecast.code || forecast.code.length === 0) continue;
+    const todayCode = forecast.code[0]; // First day = today
+    const rainProb = forecast.rain ? (forecast.rain[0] || 0) : 0;
+
+    let weatherClass = weatherClassForCode(todayCode);
+    // If rain probability is high but code says cloudy, treat as rain for safety
+    if (weatherClass === "cloudy" && rainProb >= 60) weatherClass = "rain";
+    if (weatherClass === "fine" && rainProb >= 70) weatherClass = "rain";
+
+    const goodTypes = WEATHER_SPOT_MAP[weatherClass] || WEATHER_SPOT_MAP.cloudy;
+    const spotType = spot.primaryType.ja;
+
+    // Check if spot type matches
+    if (goodTypes.includes(spotType)) return true;
+    // Also check type detail
+    if (spot.typeDetail.ja && goodTypes.some(t => spot.typeDetail.ja.includes(t.replace("・", "")))) return true;
+  }
+  return false;
 }
 
 // ---- Memo (localStorage-backed per-spot notes) ----

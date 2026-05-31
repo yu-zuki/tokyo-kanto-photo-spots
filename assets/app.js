@@ -79,7 +79,12 @@ const UI_TEXT = {
     "memo.placeholder": "メモを追加...",
     "memo.save": "保存",
     "memo.edit": "編集",
-    "weather.comfortLabel": "快適気温"
+    "weather.comfortLabel": "快適気温",
+    "card.scoreBreakdown": "スコア内訳",
+    "card.expandAll": "全て展開",
+    "card.collapseAll": "全て折畳",
+    "card.tempRange": "適温",
+    "card.tempToday": "今日"
   },
   zh: {
     "app.title": "东京・关东摄影地笔记",
@@ -153,7 +158,12 @@ const UI_TEXT = {
     "memo.placeholder": "添加备注...",
     "memo.save": "保存",
     "memo.edit": "编辑",
-    "weather.comfortLabel": "舒适温度"
+    "weather.comfortLabel": "舒适温度",
+    "card.scoreBreakdown": "评分详情",
+    "card.expandAll": "全部展开",
+    "card.collapseAll": "全部折叠",
+    "card.tempRange": "适温",
+    "card.tempToday": "今天"
   },
 };
 
@@ -375,6 +385,9 @@ const el = {
   refreshWeather: document.querySelector("#refreshWeather"),
   comfortTemp: document.querySelector("#comfortTemp"),
   comfortValue: document.querySelector("#comfortValue"),
+  expandAllScores: document.querySelector("#expandAllScores"),
+  collapseAllScores: document.querySelector("#collapseAllScores"),
+  scoreToggleGroup: document.querySelector("#scoreToggleGroup"),
 };
 
 const spots = rawSpots.map(normalizeSpot);
@@ -969,6 +982,43 @@ function renderCards(list) {
   el.cards.innerHTML = list.map(cardTemplate).join("");
 }
 
+function tempInfo(spot) {
+  if (!weatherCache || !weatherCache.forecasts) return "";
+  const prefJa = spot.prefecture.ja;
+  const prefs = prefJa.split("・");
+
+  for (const pref of prefs) {
+    const fc = weatherCache.forecasts[pref];
+    if (!fc || !fc.high || fc.high.length === 0) continue;
+
+    const todayHigh = Math.round(fc.high[0]);
+    const shift = comfortShift();
+    const allTypes = [spot.primaryType.ja];
+    if (spot.typeDetail.ja) {
+      for (const t of spot.typeDetail.ja.split("/")) {
+        const c = t.trim();
+        if (c && c !== spot.primaryType.ja) allTypes.push(c);
+      }
+    }
+
+    for (const t of allTypes) {
+      const range = TYPE_TEMP_RANGE[t];
+      if (!range) continue;
+      const lo = range[0] + shift;
+      const hi = range[1] + shift;
+      const ok = todayHigh >= lo && todayHigh <= hi;
+      const cls = ok ? "temp-ok" : "temp-ng";
+      const icon = ok ? "✓" : "✗";
+      return `
+        <div class="temp-info ${cls}">
+          <span>🌡 ${escapeHtml(t("card.tempRange"))} ${lo}〜${hi}°C</span>
+          <span>${escapeHtml(t("card.tempToday"))} ${todayHigh}°C ${icon}</span>
+        </div>`;
+    }
+  }
+  return "";
+}
+
 function cardTemplate(spot) {
   const id = spot.id;
   const grade = String(spot.grade || "").toLowerCase();
@@ -1001,7 +1051,11 @@ function cardTemplate(spot) {
         <div><span>${escapeHtml(t("card.typeDetail"))}</span>${escapeHtml(localized(spot.typeDetail))}</div>
         <div><span>${escapeHtml(t("card.niche"))}</span>${escapeHtml(spot.niche ?? "-")}</div>
       </div>
-      <div class="score-breakdown">${scoreFields.map((field) => miniScore(spot, field)).join("")}</div>
+      ${tempInfo(spot)}
+      <button class="score-toggle" type="button" data-toggle-score="${id}" aria-expanded="false">
+        ${escapeHtml(t("card.scoreBreakdown"))} ▸
+      </button>
+      <div class="score-breakdown collapsed">${scoreFields.map((field) => miniScore(spot, field)).join("")}</div>
       ${memoSection(spot)}
       <div class="link-row">${linkButtons(spot)}</div>
     </article>
@@ -1573,6 +1627,31 @@ function bindEvents() {
       }
       return;
     }
+    const scoreToggle = event.target.closest("[data-toggle-score]");
+    if (scoreToggle) {
+      const card = scoreToggle.closest(".spot-card");
+      const breakdown = card?.querySelector(".score-breakdown");
+      if (breakdown) {
+        const collapsed = breakdown.classList.toggle("collapsed");
+        scoreToggle.setAttribute("aria-expanded", !collapsed);
+        scoreToggle.innerHTML = `${t("card.scoreBreakdown")} ${collapsed ? "▸" : "▾"}`;
+      }
+      return;
+    }
+  });
+  el.expandAllScores.addEventListener("click", () => {
+    document.querySelectorAll(".score-breakdown").forEach(el => el.classList.remove("collapsed"));
+    document.querySelectorAll("[data-toggle-score]").forEach(btn => {
+      btn.setAttribute("aria-expanded", "true");
+      btn.innerHTML = `${t("card.scoreBreakdown")} ▾`;
+    });
+  });
+  el.collapseAllScores.addEventListener("click", () => {
+    document.querySelectorAll(".score-breakdown").forEach(el => el.classList.add("collapsed"));
+    document.querySelectorAll("[data-toggle-score]").forEach(btn => {
+      btn.setAttribute("aria-expanded", "false");
+      btn.innerHTML = `${t("card.scoreBreakdown")} ▸`;
+    });
   });
   bindTableInteractions();
 }
@@ -1640,6 +1719,7 @@ function setView(view) {
   el.cardViewBtn.classList.toggle("active", view === "cards");
   el.tableViewBtn.classList.toggle("active", view === "table");
   el.mapViewBtn.classList.toggle("active", view === "map");
+  el.scoreToggleGroup.classList.toggle("hidden", view !== "cards");
   render();
 }
 

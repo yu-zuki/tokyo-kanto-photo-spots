@@ -1129,3 +1129,80 @@ td.score-cell {
   color: #fff;
   border-color: var(--teal);
 }
+
+/* ---- Temp Info ---- */
+.temp-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.35rem 0.5rem;
+  margin-top: 0.4rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.temp-info.temp-ok {
+  background: var(--teal-soft);
+  color: var(--teal);
+}
+
+.temp-info.temp-ng {
+  background: #fce4e4;
+  color: var(--red);
+}
+
+/* ---- Score Toggle ---- */
+.score-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  width: 100%;
+  padding: 0.3rem 0.5rem;
+  border: none;
+  background: var(--paper);
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 6px;
+  margin-top: 0.3rem;
+}
+
+.score-toggle:hover {
+  background: var(--teal-soft);
+  color: var(--teal);
+}
+
+/* ---- Score Breakdown Collapse ---- */
+.score-breakdown.collapsed {
+  display: none;
+}
+
+/* ---- Score Toggle Group ---- */
+.score-toggle-group {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.score-toggle-group button {
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.score-toggle-group button:hover {
+  background: var(--teal-soft);
+  color: var(--teal);
+  border-color: var(--teal);
+}
+
+.score-toggle-group.hidden {
+  display: none;
+}

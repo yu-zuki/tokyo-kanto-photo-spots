@@ -1730,6 +1730,59 @@ td.score-cell {
   white-space: nowrap;
 }
 
+/* ---- Travel Filters ---- */
+.travel-filter-bar {
+  display: grid;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.tl-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.tl-row > span {
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-weight: 600;
+  min-width: 3em;
+}
+
+.tl-chip {
+  padding: 3px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--muted);
+  font-size: 0.72rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tl-chip.active {
+  background: var(--pink-soft);
+  color: var(--pink-2);
+  border-color: var(--pink);
+}
+
+.tl-chip:hover { border-color: var(--pink); }
+
+.tl-score {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.tl-score input { accent-color: var(--pink); }
+
 @media print {
   body {
     background: #fff;

@@ -429,6 +429,7 @@ const el = {
   tripPanel: document.querySelector("#tripPanel"),
   photoModuleBtn: document.querySelector("#photoModuleBtn"),
   travelModuleBtn: document.querySelector("#travelModuleBtn"),
+  travelFilterBar: document.querySelector("#travelFilterBar"),
 };
 
 const spots = rawSpots.map(normalizeSpot);
@@ -1024,7 +1025,7 @@ function sorter(mode) {
 
 function render() {
   const isTravel = state.activeModule === "travel";
-  const list = isTravel ? travelSpots : filteredSpots();
+  const list = isTravel ? filteredTravelSpots() : filteredSpots();
   el.resultCount.textContent = list.length;
   el.savedCount.textContent = saved.size;
   el.totalCount.textContent = isTravel ? travelSpots.length : spots.length;
@@ -1042,9 +1043,10 @@ function render() {
   el.mapWrap.classList.toggle("hidden", state.view !== "map");
   el.tripView.classList.toggle("hidden", state.view !== "trip");
   // Hide score toggle group in travel mode
+  el.travelFilterBar.classList.toggle("hidden", !isTravel || state.view !== "cards");
   el.scoreToggleGroup.classList.toggle("hidden", isTravel || state.view !== "cards");
   if (state.view === "cards") {
-    if (isTravel) { renderTravelCards(list); }
+    if (isTravel) { renderTravelFilters(); renderTravelCards(list); }
     else { renderCards(list); }
   } else if (state.view === "table") {
     if (isTravel) { renderTravelTable(list); }
@@ -2331,11 +2333,74 @@ const travelSpots = (TRAVEL_DATA.spots || []).map(s => ({
   description: {ja: s.description_ja || "", zh: s.description_zh || ""},
 }));
 
+// Travel filter state
+const travelState = {
+  pref: new Set(),
+  category: new Set(),
+  crowd: new Set(),
+  tripStyle: new Set(),
+  minScore: 0,
+};
+
+function filteredTravelSpots() {
+  return travelSpots.filter(s => {
+    if (travelState.pref.size > 0 && !travelState.pref.has(s.prefecture.ja)) return false;
+    if (travelState.category.size > 0 && !travelState.category.has(s.primaryType.ja)) return false;
+    if (travelState.crowd.size > 0 && !travelState.crowd.has(s.crowdLevel)) return false;
+    if (travelState.tripStyle.size > 0 && !travelState.tripStyle.has(s.trip_style)) return false;
+    if (s.score < travelState.minScore) return false;
+    return true;
+  });
+}
+
+// Travel filter chip UI (rendered above cards in travel mode)
+function renderTravelFilters() {
+  const prefs = [...new Set(travelSpots.map(s => s.prefecture.ja))].sort();
+  const cats = [...new Set(travelSpots.map(s => s.primaryType.ja))].sort();
+  const crowds = ['low','medium','high','extreme'];
+  const styles = ['day_trip','weekend','overnight'];
+  const crowdLabels = {low:'🟢空', medium:'🟡普', high:'🟠混', extreme:'🔴超'};
+  const styleLabels = {day_trip:'日帰り', weekend:'週末', overnight:'宿泊'};
+
+  const chip = (set, val, label) => {
+    const active = set.has(val);
+    return `<button class="tl-chip ${active ? 'active' : ''}" data-tl-set="${set === travelState.pref ? 'pref' : set === travelState.category ? 'cat' : set === travelState.crowd ? 'crowd' : 'style'}" data-tl-val="${val}">${label}</button>`;
+  };
+
+  let html = '<div class="travel-filters">';
+  html += '<div class="tl-row"><span>都県</span>' + prefs.map(p => chip(travelState.pref, p, p.replace('県',''))).join('') + '</div>';
+  html += '<div class="tl-row"><span>分類</span>' + cats.map(c => chip(travelState.category, c, c)).join('') + '</div>';
+  html += '<div class="tl-row"><span>混雑</span>' + crowds.map(c => chip(travelState.crowd, c, crowdLabels[c])).join('') + '</div>';
+  html += '<div class="tl-row"><span>日帰/週末</span>' + styles.map(s => chip(travelState.tripStyle, s, styleLabels[s])).join('');
+  html += `<label class="tl-score"><span>最低点</span><input type="range" min="0" max="100" value="${travelState.minScore}" id="tlMinScore" /><b>${travelState.minScore}</b></label>`;
+  html += '</div></div>';
+  el.travelFilterBar.innerHTML = html;
+
+  // Bind chip clicks
+  el.travelFilterBar.querySelectorAll('.tl-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const setKey = btn.dataset.tlSet;
+      const val = btn.dataset.tlVal;
+      const set = setKey === 'pref' ? travelState.pref : setKey === 'cat' ? travelState.category : setKey === 'crowd' ? travelState.crowd : travelState.tripStyle;
+      if (set.has(val)) set.delete(val); else set.add(val);
+      render();
+    });
+  });
+  const scoreSlider = el.travelFilterBar.querySelector('#tlMinScore');
+  if (scoreSlider) scoreSlider.addEventListener('input', () => {
+    travelState.minScore = Number(scoreSlider.value);
+    render();
+  });
+}
+
 function travelCardTemplate(spot) {
   const id = spot.id; const grade = String(spot.grade||"").toLowerCase();
   const CROWD = {low:["🟢","空いている"], medium:["🟡","普通"], high:["🟠","混雑"], extreme:["🔴","超混雑"]};
   const [cemoji, clabel] = CROWD[spot.crowdLevel] || ["⚪",""];
+  const travelMeta = TRAVEL_META[spot.id] || {};
+  const imgSrc = travelMeta.localImageUrl || "";
   return `<article class="spot-card travel-card">
+    ${imgSrc ? `<figure class="spot-photo"><img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(localized(spot.name))}" loading="lazy" /></figure>` : ""}
     <div class="spot-head"><div class="spot-title">
       <h3>${escapeHtml(localized(spot.name))}</h3>
       <p>${escapeHtml(localized(spot.prefecture))} / ${escapeHtml(localized(spot.area))}</p>

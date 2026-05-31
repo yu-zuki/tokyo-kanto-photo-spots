@@ -2713,7 +2713,7 @@ function travelCardTemplate(spot) {
   const CROWD = {low:["🟢","空いている"], medium:["🟡","普通"], high:["🟠","混雑"], extreme:["🔴","超混雑"]};
   const [cemoji, clabel] = CROWD[spot.crowdLevel] || ["⚪",""];
   const travelMeta = TRAVEL_META[spot.id] || {};
-  const imgSrc = travelMeta.localImageUrl || "";
+  const imgSrc = travelMeta.localImageUrl || travelMeta.imageUrl || "";
   return `<article class="spot-card travel-card">
     ${imgSrc ? `<figure class="spot-photo"><img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(localized(spot.name))}" loading="lazy" /></figure>` : ""}
     <div class="spot-head"><div class="spot-title">

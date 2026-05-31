@@ -37,9 +37,11 @@ const UI_TEXT = {
     "sort.nicheDesc": "穴場度が高い順",
     "sort.traffic": "アクセス優先",
     "sort.name": "撮影地名",
+    "views.dashboard": "概要",
     "views.cards": "カード",
     "views.table": "表",
     "views.map": "地図",
+    "views.trip": "旅程",
     "map.title": "位置一覧",
     "map.countSuffix": "件を表示",
     "empty.noResults": "条件に合う撮影地がありません。",
@@ -121,9 +123,11 @@ const UI_TEXT = {
     "sort.nicheDesc": "小众度从高到低",
     "sort.traffic": "交通优先",
     "sort.name": "摄影地名",
+    "views.dashboard": "概览",
     "views.cards": "卡片",
     "views.table": "表格",
     "views.map": "地图",
+    "views.trip": "行程",
     "map.title": "位置一览",
     "map.countSuffix": "件显示中",
     "empty.noResults": "没有符合条件的摄影地。",
@@ -344,7 +348,7 @@ const state = {
   comfortTemp: Number(localStorage.getItem("photoSpotComfortTemp")) || 26,
   homePref: localStorage.getItem("photoSpotHomePref") || "",
   sort: "score-desc",
-  view: "cards",
+  view: "dashboard",
 };
 
 if (!UI_TEXT[state.lang]) state.lang = "ja";
@@ -373,13 +377,16 @@ const el = {
   savedOnly: document.querySelector("#savedOnly"),
   resetFilters: document.querySelector("#resetFilters"),
   sortSelect: document.querySelector("#sortSelect"),
+  dashboardViewBtn: document.querySelector("#dashboardViewBtn"),
   cardViewBtn: document.querySelector("#cardViewBtn"),
   tableViewBtn: document.querySelector("#tableViewBtn"),
   mapViewBtn: document.querySelector("#mapViewBtn"),
+  tripViewBtn: document.querySelector("#tripViewBtn"),
   scoringModel: document.querySelector("#scoringModel"),
   gradeChart: document.querySelector("#gradeChart"),
   typeChart: document.querySelector("#typeChart"),
   bestSpot: document.querySelector("#bestSpot"),
+  dashboardView: document.querySelector("#dashboardView"),
   cards: document.querySelector("#cards"),
   tableWrap: document.querySelector("#tableWrap"),
   tableHead: document.querySelector("#tableHead"),
@@ -389,6 +396,7 @@ const el = {
   mapFallback: document.querySelector("#mapFallback"),
   mapCount: document.querySelector("#mapCount"),
   mapPrecision: document.querySelector("#mapPrecision"),
+  tripView: document.querySelector("#tripView"),
   langJa: document.querySelector("#langJa"),
   langZh: document.querySelector("#langZh"),
   seasonNow: document.querySelector("#seasonNow"),
@@ -974,14 +982,17 @@ function render() {
   el.savedCount.textContent = saved.size;
   renderCharts(list);
   renderBest(list);
+  renderTripPanel();
+  el.dashboardView.classList.toggle("hidden", state.view !== "dashboard");
   el.cards.classList.toggle("hidden", state.view !== "cards");
   el.tableWrap.classList.toggle("hidden", state.view !== "table");
   el.mapWrap.classList.toggle("hidden", state.view !== "map");
+  el.tripView.classList.toggle("hidden", state.view !== "trip");
   if (state.view === "cards") {
     renderCards(list);
   } else if (state.view === "table") {
     renderTable(list);
-  } else {
+  } else if (state.view === "map") {
     renderMap(list);
   }
 }
@@ -1719,9 +1730,11 @@ function bindEvents() {
   });
   el.clearTrip.addEventListener("click", clearTrip);
   el.resetFilters.addEventListener("click", resetFilters);
+  el.dashboardViewBtn.addEventListener("click", () => setView("dashboard"));
   el.cardViewBtn.addEventListener("click", () => setView("cards"));
   el.tableViewBtn.addEventListener("click", () => setView("table"));
   el.mapViewBtn.addEventListener("click", () => setView("map"));
+  el.tripViewBtn.addEventListener("click", () => setView("trip"));
   document.addEventListener("click", (event) => {
     const tripButton = event.target.closest("[data-trip]");
     if (tripButton) {
@@ -1835,9 +1848,11 @@ function bindTableInteractions() {
 
 function setView(view) {
   state.view = view;
+  el.dashboardViewBtn.classList.toggle("active", view === "dashboard");
   el.cardViewBtn.classList.toggle("active", view === "cards");
   el.tableViewBtn.classList.toggle("active", view === "table");
   el.mapViewBtn.classList.toggle("active", view === "map");
+  el.tripViewBtn.classList.toggle("active", view === "trip");
   el.scoreToggleGroup.classList.toggle("hidden", view !== "cards");
   render();
 }

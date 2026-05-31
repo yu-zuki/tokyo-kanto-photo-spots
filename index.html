@@ -6,64 +6,55 @@
     <title>東京・関東 撮影地ノート</title>
     <link rel="stylesheet" href="assets/styles.css" />
     <link rel="manifest" href="manifest.json" />
-    <meta name="theme-color" content="#e66f9a" />
+    <meta name="theme-color" content="#e36f9d" />
   </head>
   <body>
     <header class="app-header">
-      <div>
+      <div class="brand-block">
         <p class="eyebrow">Tokyo / Kanto Field Notes</p>
         <h1 data-i18n="app.title">東京・関東 撮影地ノート</h1>
       </div>
-      <div class="language-toggle" role="group" aria-label="Language">
-        <button class="active" id="langJa" type="button" data-lang="ja">日本語</button>
-        <button id="langZh" type="button" data-lang="zh">中文</button>
-      </div>
-      <div class="header-stats" aria-label="データ概要">
-        <div><strong id="totalCount">269</strong><span data-i18n="stats.total">候補地</span></div>
-        <div><strong id="avgScore">-</strong><span data-i18n="stats.avg">平均点</span></div>
-        <div><strong id="savedCount">0</strong><span data-i18n="stats.saved">保存済み</span></div>
+
+      <label class="global-search">
+        <span data-i18n="filters.search">検索</span>
+        <input id="searchInput" type="search" placeholder="撮影地、エリア、被写体、レンズ..." autocomplete="off" data-i18n-attr="placeholder:filters.searchPlaceholder" />
+      </label>
+
+      <div class="header-actions">
+        <div class="language-toggle" role="group" aria-label="Language">
+          <button class="active" id="langJa" type="button" data-lang="ja">日本語</button>
+          <button id="langZh" type="button" data-lang="zh">中文</button>
+        </div>
+        <div class="header-stats" aria-label="データ概要">
+          <div><strong id="totalCount">0</strong><span data-i18n="stats.total">候補地</span></div>
+          <div><strong id="avgScore">-</strong><span data-i18n="stats.avg">平均点</span></div>
+          <div><strong id="savedCount">0</strong><span data-i18n="stats.saved">保存済み</span></div>
+        </div>
       </div>
     </header>
 
-    <main class="layout">
-      <aside class="sidebar" aria-label="絞り込み条件" data-i18n-attr="aria-label:filters.aria">
+    <main class="app-shell">
+      <aside class="control-rail" aria-label="絞り込み条件" data-i18n-attr="aria-label:filters.aria">
         <section class="panel controls">
           <div class="panel-title">
-            <h2 data-i18n="filters.title">絞り込み</h2>
+            <div>
+              <p class="muted">Filter Console</p>
+              <h2 data-i18n="filters.title">絞り込み</h2>
+            </div>
             <button class="icon-button" id="resetFilters" type="button" title="絞り込みをリセット" aria-label="絞り込みをリセット" data-i18n-attr="title:filters.reset;aria-label:filters.reset">↺</button>
           </div>
 
-          <label class="search-box">
-            <span data-i18n="filters.search">検索</span>
-            <input id="searchInput" type="search" placeholder="撮影地、エリア、被写体、レンズ..." autocomplete="off" data-i18n-attr="placeholder:filters.searchPlaceholder" />
-          </label>
-
-          <div class="filter-group">
-            <span data-i18n="filters.grade">候補ランク</span>
-            <div id="gradeFilter" class="multi-filter"></div>
-          </div>
-
-          <div class="filter-group">
+          <div class="filter-group primary-filter">
             <span data-i18n="filters.pref">都県</span>
             <div id="prefFilter" class="multi-filter"></div>
           </div>
 
-          <div class="filter-group">
+          <div class="filter-group primary-filter">
             <span data-i18n="filters.type">カテゴリ</span>
             <div id="typeFilter" class="multi-filter"></div>
           </div>
 
-          <div class="filter-group">
-            <span data-i18n="filters.access">アクセス</span>
-            <div id="trafficFilter" class="multi-filter"></div>
-          </div>
-
-          <div class="filter-group">
-            <span data-i18n="filters.time">移動時間</span>
-            <div id="timeFilter" class="multi-filter"></div>
-          </div>
-
-          <label>
+          <label class="score-range">
             <span><span data-i18n="filters.minScore">最低スコア</span> <b id="minScoreValue">0</b></span>
             <input id="minScore" type="range" min="0" max="100" value="0" />
           </label>
@@ -73,36 +64,58 @@
             <span data-i18n="filters.savedOnly">保存済みのみ</span>
           </label>
 
-          <label class="check-row season-row">
-            <input id="seasonNow" type="checkbox" />
-            <span data-i18n="filters.seasonNow">今が見頃のみ</span>
-          </label>
+          <details class="advanced-filters" open>
+            <summary>Advanced</summary>
 
-          <label class="check-row season-row">
-            <input id="weatherMatch" type="checkbox" />
-            <span data-i18n="filters.weatherMatch">天気に合う場所のみ</span>
-          </label>
+            <div class="filter-group">
+              <span data-i18n="filters.grade">候補ランク</span>
+              <div id="gradeFilter" class="multi-filter"></div>
+            </div>
 
-          <label class="home-row">
-            <span data-i18n="filters.home">出発地</span>
-            <select id="homePref">
-              <option value="" data-i18n="filters.homeNone">設定しない</option>
-              <option value="東京都">東京</option>
-              <option value="神奈川県">神奈川</option>
-              <option value="千葉県">千葉</option>
-              <option value="埼玉県">埼玉</option>
-              <option value="茨城県">茨城</option>
-              <option value="栃木県">栃木</option>
-              <option value="群馬県">群馬</option>
-              <option value="山梨県">山梨</option>
-              <option value="静岡県">静岡</option>
-            </select>
-          </label>
+            <div class="filter-group">
+              <span data-i18n="filters.access">アクセス</span>
+              <div id="trafficFilter" class="multi-filter"></div>
+            </div>
+
+            <div class="filter-group">
+              <span data-i18n="filters.time">移動時間</span>
+              <div id="timeFilter" class="multi-filter"></div>
+            </div>
+
+            <label class="check-row season-row">
+              <input id="seasonNow" type="checkbox" />
+              <span data-i18n="filters.seasonNow">今が見頃のみ</span>
+            </label>
+
+            <label class="check-row season-row">
+              <input id="weatherMatch" type="checkbox" />
+              <span data-i18n="filters.weatherMatch">天気に合う場所のみ</span>
+            </label>
+
+            <label class="home-row">
+              <span data-i18n="filters.home">出発地</span>
+              <select id="homePref">
+                <option value="" data-i18n="filters.homeNone">設定しない</option>
+                <option value="東京都">東京</option>
+                <option value="神奈川県">神奈川</option>
+                <option value="千葉県">千葉</option>
+                <option value="埼玉県">埼玉</option>
+                <option value="茨城県">茨城</option>
+                <option value="栃木県">栃木</option>
+                <option value="群馬県">群馬</option>
+                <option value="山梨県">山梨</option>
+                <option value="静岡県">静岡</option>
+              </select>
+            </label>
+          </details>
         </section>
 
         <section class="panel weather-panel" id="weatherPanel">
           <div class="panel-title">
-            <h2 data-i18n="sections.weather">週末の天気</h2>
+            <div>
+              <p class="muted">Weekend</p>
+              <h2 data-i18n="sections.weather">週末の天気</h2>
+            </div>
             <button class="icon-button" id="refreshWeather" type="button" title="更新" aria-label="天気を更新">↻</button>
           </div>
           <div id="weatherContent" class="weather-content">
@@ -114,39 +127,26 @@
           </label>
         </section>
 
-        <section class="panel">
-          <div class="panel-title">
-            <h2 data-i18n="sections.photoSites">日本の写真サイト</h2>
-          </div>
+        <details class="panel reference-panel">
+          <summary data-i18n="sections.photoSites">日本の写真サイト</summary>
           <div id="photoSites" class="photo-site-list"></div>
-        </section>
+        </details>
 
-        <section class="panel trip-panel" id="tripPanel">
-          <div class="panel-title">
-            <h2 data-i18n="sections.trip">旅程計画</h2>
-            <button class="icon-button" id="clearTrip" type="button" title="クリア" aria-label="旅程をクリア">✕</button>
-          </div>
-          <div id="tripContent" class="trip-content">
-            <p class="trip-empty">旅程に追加してみよう</p>
-          </div>
-        </section>
-
-        <section class="panel">
-          <div class="panel-title">
-            <h2 data-i18n="sections.scoring">採点モデル</h2>
-          </div>
+        <details class="panel reference-panel">
+          <summary data-i18n="sections.scoring">採点モデル</summary>
           <div id="scoringModel" class="scoring-list"></div>
-        </section>
+        </details>
       </aside>
 
-      <section class="content">
-        <section class="toolbar">
-          <div>
+      <section class="workspace">
+        <section class="workspace-bar">
+          <div class="result-status">
             <p class="muted" data-i18n="toolbar.showing">表示中</p>
             <h2><span id="resultCount">0</span> <span data-i18n="toolbar.countSuffix">件</span></h2>
           </div>
-          <div class="toolbar-actions">
-            <label>
+
+          <div class="workspace-tools">
+            <label class="sort-control">
               <span data-i18n="toolbar.sort">並び順</span>
               <select id="sortSelect">
                 <option value="score-desc" data-i18n="sort.scoreDesc">スコアが高い順</option>
@@ -156,36 +156,48 @@
                 <option value="name" data-i18n="sort.name">撮影地名</option>
               </select>
             </label>
-            <div class="view-toggle" role="group" aria-label="表示切替">
-              <button class="active" id="cardViewBtn" type="button" data-i18n="views.cards">カード</button>
+
+            <nav class="view-toggle" role="tablist" aria-label="表示切替">
+              <button class="active" id="dashboardViewBtn" type="button" data-i18n="views.dashboard">概要</button>
+              <button id="cardViewBtn" type="button" data-i18n="views.cards">カード</button>
               <button id="tableViewBtn" type="button" data-i18n="views.table">表</button>
               <button id="mapViewBtn" type="button" data-i18n="views.map">地図</button>
-            </div>
-            <div class="score-toggle-group" id="scoreToggleGroup">
+              <button id="tripViewBtn" type="button" data-i18n="views.trip">旅程</button>
+            </nav>
+
+            <div class="score-toggle-group hidden" id="scoreToggleGroup">
               <button id="expandAllScores" type="button" data-i18n="card.expandAll">全て展開</button>
               <button id="collapseAllScores" type="button" data-i18n="card.collapseAll">全て折畳</button>
             </div>
           </div>
         </section>
 
-        <section class="summary-grid" aria-label="結果サマリー">
-          <div class="panel">
-            <h2 data-i18n="sections.gradeChart">ランク分布</h2>
-            <div id="gradeChart" class="bar-chart"></div>
-          </div>
-          <div class="panel">
-            <h2 data-i18n="sections.typeChart">カテゴリ概要</h2>
-            <div id="typeChart" class="bar-chart compact"></div>
-          </div>
-          <div class="panel highlight">
-            <h2 data-i18n="sections.best">最高スコア</h2>
-            <div id="bestSpot"></div>
-          </div>
+        <section id="dashboardView" class="dashboard-view" aria-live="polite">
+          <section class="summary-grid" aria-label="結果サマリー">
+            <div class="panel metric-panel">
+              <h2 data-i18n="sections.gradeChart">ランク分布</h2>
+              <div id="gradeChart" class="bar-chart"></div>
+            </div>
+            <div class="panel metric-panel">
+              <h2 data-i18n="sections.typeChart">カテゴリ概要</h2>
+              <div id="typeChart" class="bar-chart compact"></div>
+            </div>
+            <div class="panel highlight best-panel">
+              <h2 data-i18n="sections.best">最高スコア</h2>
+              <div id="bestSpot"></div>
+            </div>
+          </section>
         </section>
 
-        <section id="cards" class="cards" aria-live="polite"></section>
+        <section id="cards" class="cards hidden" aria-live="polite"></section>
 
         <section id="tableWrap" class="table-wrap hidden" aria-live="polite">
+          <div class="view-head">
+            <div>
+              <p class="muted">Database</p>
+              <h2 data-i18n="views.table">表</h2>
+            </div>
+          </div>
           <table>
             <thead id="tableHead"></thead>
             <tbody id="tableBody"></tbody>
@@ -202,6 +214,21 @@
           </div>
           <div id="mapCanvas" class="map-canvas"></div>
           <div id="mapFallback" class="map-fallback hidden"></div>
+        </section>
+
+        <section id="tripView" class="trip-workspace hidden" aria-live="polite">
+          <section class="panel trip-panel" id="tripPanel">
+            <div class="panel-title">
+              <div>
+                <p class="muted">Route Board</p>
+                <h2 data-i18n="sections.trip">旅程計画</h2>
+              </div>
+              <button class="icon-button" id="clearTrip" type="button" title="クリア" aria-label="旅程をクリア">✕</button>
+            </div>
+            <div id="tripContent" class="trip-content trip-content-large">
+              <p class="trip-empty">旅程に追加してみよう</p>
+            </div>
+          </section>
         </section>
       </section>
     </main>

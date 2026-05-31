@@ -370,6 +370,7 @@ if (!UI_TEXT[state.lang]) state.lang = "ja";
 
 const saved = new Set(safeJsonStorage("photoSpotSaved", []));
 const tripPlan = safeJsonStorage("photoSpotTripPlan", []); // ordered array of spot IDs
+const travelTripPlan = safeJsonStorage("travelSpotTripPlan", []); // ordered array of travel spot IDs
 const memos = safeJsonStorage("photoSpotMemos", {});
 let weatherCache = null; // { updated, forecasts: { prefJa: { high, low, rain, icon } } }
 let tableColumns = loadTableColumns();
@@ -1036,14 +1037,13 @@ function render() {
     if (el.tripPanel) el.tripPanel.classList.remove("hidden");
   } else {
     renderTravelDashboard(list);
-    if (state.view === "trip") renderTravelTripPanel(list);
   }
   el.dashboardView.classList.toggle("hidden", state.view !== "dashboard");
   el.cards.classList.toggle("hidden", state.view !== "cards");
   el.tableWrap.classList.toggle("hidden", state.view !== "table");
   el.mapWrap.classList.toggle("hidden", state.view !== "map");
   el.tripView.classList.toggle("hidden", state.view !== "trip");
-  if (el.tripPanel) el.tripPanel.classList.toggle("hidden", isTravel && state.view !== "trip");
+  if (el.tripPanel) el.tripPanel.classList.toggle("hidden", state.view !== "trip");
   // Hide score toggle group in travel mode
   el.travelFilterBar.classList.toggle("hidden", !isTravel || state.view !== "cards");
   el.scoreToggleGroup.classList.toggle("hidden", isTravel || state.view !== "cards");
@@ -1057,7 +1057,7 @@ function render() {
     if (isTravel) { renderTravelMap(list); }
     else { renderMap(list); }
   } else if (state.view === "trip") {
-    // Trip view: photo uses the saved route panel; travel currently shows candidate guidance.
+    // Trip view: both photo and travel modules use their own trip planners
     if (isTravel) renderTravelTripPanel(list);
   }
 }
@@ -1162,6 +1162,42 @@ function travelMapPopupHtml(spot) {
       <a href="${escapeHtml(travelMapsUrl(spot))}" target="_blank" rel="noreferrer">${escapeHtml(t("map.open"))}</a>
     </div>
   `;
+}
+
+function travelRoutePoint(spot) {
+  const loc = TRAVEL_LOCS.locations[spot.id];
+  if (loc && loc.lat) return `${loc.lat},${loc.lng}`;
+  return [spot.name.ja, spot.prefecture.ja, "日本"].filter(Boolean).join(" ");
+}
+
+function googleMapsTravelTripUrl() {
+  const tripSpots = travelTripPlan.map((id) => travelSpots.find((s) => s.id === id)).filter(Boolean);
+  if (!tripSpots.length) return "https://www.google.com/maps";
+  if (tripSpots.length === 1) return travelMapsUrl(tripSpots[0]);
+  const params = new URLSearchParams({ api: "1", travelmode: "transit" });
+  params.set("origin", travelRoutePoint(tripSpots[0]));
+  params.set("destination", travelRoutePoint(tripSpots[tripSpots.length - 1]));
+  if (tripSpots.length > 2) {
+    params.set("waypoints", tripSpots.slice(1, -1).map(travelRoutePoint).join("|"));
+  }
+  return `https://www.google.com/maps/dir/?${params.toString()}`;
+}
+
+function toggleTravelTripSpot(id) {
+  const idx = travelTripPlan.indexOf(id);
+  if (idx >= 0) {
+    travelTripPlan.splice(idx, 1);
+  } else {
+    travelTripPlan.push(id);
+  }
+  localStorage.setItem("travelSpotTripPlan", JSON.stringify(travelTripPlan));
+  render();
+}
+
+function clearTravelTrip() {
+  travelTripPlan.length = 0;
+  localStorage.setItem("travelSpotTripPlan", JSON.stringify(travelTripPlan));
+  render();
 }
 
 function renderTravelLeafletMap(located) {
@@ -1942,7 +1978,10 @@ function bindEvents() {
     state.sort = event.target.value;
     render();
   });
-  el.clearTrip.addEventListener("click", clearTrip);
+  el.clearTrip.addEventListener("click", () => {
+    if (state.activeModule === "travel") clearTravelTrip();
+    else clearTrip();
+  });
   el.resetFilters.addEventListener("click", resetFilters);
   el.dashboardViewBtn.addEventListener("click", () => setView("dashboard"));
   el.cardViewBtn.addEventListener("click", () => setView("cards"));
@@ -1953,6 +1992,11 @@ function bindEvents() {
     const tripButton = event.target.closest("[data-trip]");
     if (tripButton) {
       toggleTripSpot(tripButton.dataset.trip);
+      return;
+    }
+    const travelTripButton = event.target.closest("[data-travel-trip]");
+    if (travelTripButton) {
+      toggleTravelTripSpot(travelTripButton.dataset.travelTrip);
       return;
     }
     const saveButton = event.target.closest("[data-save]");
@@ -2523,24 +2567,87 @@ function renderTravelDashboard(list) {
 function renderTravelTripPanel(list) {
   const panel = document.querySelector("#tripContent");
   if (!panel) return;
-  const picks = list.slice(0, 5);
-  if (!picks.length) {
-    panel.innerHTML = `<p class="trip-empty">${escapeHtml(t("empty.noData"))}</p>`;
+  if (travelTripPlan.length === 0) {
+    // Show top candidates as suggestions
+    const picks = list.slice(0, 5);
+    if (!picks.length) {
+      panel.innerHTML = `<p class="trip-empty">${escapeHtml(t("empty.noData"))}</p>`;
+      return;
+    }
+    panel.innerHTML = `
+      <p class="trip-empty">旅行先を旅程に追加してみよう。カードの ○ ボタンで追加できます。</p>
+      <p class="trip-suggest-label">おすすめ候補</p>
+      <ol class="trip-list">
+        ${picks.map((spot, i) => `
+          <li class="trip-item">
+            <span class="trip-num">${i + 1}</span>
+            <span class="trip-name">${escapeHtml(localized(spot.name))}</span>
+            <span class="trip-pref">${escapeHtml(spot.access_minutes || "-")}分 / ${escapeHtml(travelCrowdLabel(spot.crowdLevel))}</span>
+            <button class="trip-add-suggest" type="button" data-travel-trip="${spot.id}" title="旅程に追加">+</button>
+          </li>
+        `).join("")}
+      </ol>
+    `;
+    // Bind suggestion add buttons
+    panel.querySelectorAll(".trip-add-suggest").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.travelTrip;
+        if (id) toggleTravelTripSpot(id);
+      });
+    });
     return;
   }
-  panel.innerHTML = `
-    <p class="trip-empty">旅行Noteは、現在の条件で候補を並べて比較できます。移動順ナビは次フェーズで撮影Noteと同じ仕組みに統合予定です。</p>
-    <ol class="trip-list">
-      ${picks.map((spot, index) => `
-        <li class="trip-item">
-          <span class="trip-num">${index + 1}</span>
-          <span class="trip-name">${escapeHtml(localized(spot.name))}</span>
-          <span class="trip-pref">${escapeHtml(spot.access_minutes || "-")}分 / ${escapeHtml(travelCrowdLabel(spot.crowdLevel))}</span>
-          <a class="trip-remove" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${spot.name.ja} ${spot.prefecture.ja}`)}" target="_blank" rel="noreferrer" title="${escapeHtml(t("map.open"))}">↗</a>
-        </li>
-      `).join("")}
-    </ol>
-  `;
+  let html = `<ol class="trip-list">`;
+  for (let i = 0; i < travelTripPlan.length; i++) {
+    const tid = travelTripPlan[i];
+    const spot = travelSpots.find(s => s.id === tid);
+    if (!spot) continue;
+    html += `
+      <li class="trip-item">
+        <span class="trip-num">${i + 1}</span>
+        <span class="trip-name">${escapeHtml(localized(spot.name))}</span>
+        <span class="trip-pref">${escapeHtml(localized(spot.prefecture))}</span>
+        <button class="trip-remove" type="button" data-travel-trip="${tid}" title="外す">✕</button>
+      </li>`;
+  }
+  html += `</ol>`;
+  const routeUrl = googleMapsTravelTripUrl();
+  const routeLabel = travelTripPlan.length > 1 ? t("trip.openDirections") : t("trip.openPlace");
+  html += `<div class="trip-actions">
+    <a class="trip-directions" id="openTravelTripDirections" href="${escapeHtml(routeUrl)}" target="_blank" rel="noreferrer">↗ ${escapeHtml(routeLabel)}</a>
+    <button class="trip-show-map" id="showTravelTripOnMap" type="button">${escapeHtml(t("trip.showMap"))}</button>
+    <button class="trip-copy" id="copyTravelTripPlan" type="button">${escapeHtml(t("trip.copy"))}</button>
+  </div>`;
+  panel.innerHTML = html;
+
+  // Bind remove buttons
+  panel.querySelectorAll(".trip-remove").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.travelTrip;
+      if (id) toggleTravelTripSpot(id);
+    });
+  });
+  // Bind map button
+  const mapBtn = document.querySelector("#showTravelTripOnMap");
+  if (mapBtn) {
+    mapBtn.addEventListener("click", () => setView("map"));
+  }
+  // Bind copy button
+  const copyBtn = document.querySelector("#copyTravelTripPlan");
+  if (copyBtn) {
+    copyBtn.addEventListener("click", () => {
+      const lines = travelTripPlan.map((tid, i) => {
+        const spot = travelSpots.find(s => s.id === tid);
+        return spot ? `${i + 1}. ${spot.name.ja}（${spot.prefecture.ja}）` : "";
+      }).filter(Boolean);
+      lines.push("");
+      lines.push(googleMapsTravelTripUrl());
+      navigator.clipboard.writeText(lines.join("\n")).then(() => {
+        copyBtn.textContent = `✓ ${t("trip.copyDone")}`;
+        setTimeout(() => { copyBtn.textContent = t("trip.copy"); }, 2000);
+      });
+    });
+  }
 }
 
 // Travel filter chip UI (rendered above cards in travel mode)
@@ -2594,7 +2701,7 @@ function travelCardTemplate(spot) {
     <div class="spot-head"><div class="spot-title">
       <h3>${escapeHtml(localized(spot.name))}</h3>
       <p>${escapeHtml(localized(spot.prefecture))} / ${escapeHtml(localized(spot.area))}</p>
-    </div><span class="crowd-badge">${cemoji} ${clabel}</span></div>
+    </div><span class="crowd-badge">${cemoji} ${clabel}</span><button class="trip-btn ${travelTripPlan.includes(id) ? "in-trip" : ""}" type="button" data-travel-trip="${id}" title="${travelTripPlan.includes(id) ? "旅程から外す" : "旅程に追加"}" aria-label="旅程に追加">${travelTripPlan.includes(id) ? "📍" : "○"}</button></div>
     <div class="score-line"><div class="score">${spot.score}</div><div class="score-track"><div class="score-fill" style="--score:${spot.score}%"></div></div><strong>${spot.grade}</strong></div>
     <div class="tag-row"><span class="tag grade-${grade}">${spot.grade}</span><span class="tag">${escapeHtml(localized(spot.primaryType))}</span><span class="tag">${escapeHtml(travelStyleLabel(spot.trip_style))}</span></div>
     <p class="spot-desc">${escapeHtml(localized(spot.description))}</p>

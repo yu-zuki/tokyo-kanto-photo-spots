@@ -1429,6 +1429,22 @@ td.score-cell {
   margin-top: 10px;
 }
 
+.trip-directions {
+  display: grid;
+  grid-column: 1 / -1;
+  place-items: center;
+  min-height: 42px;
+  padding: 8px 12px;
+  color: #fff;
+  background: linear-gradient(135deg, var(--pink), var(--violet));
+  border: 1px solid transparent;
+  border-radius: 12px;
+  box-shadow: 0 12px 22px rgba(177, 82, 143, 0.20);
+  font-size: 13px;
+  font-weight: 850;
+  text-decoration: none;
+}
+
 .trip-copy,
 .trip-show-map {
   min-height: 38px;
@@ -1441,6 +1457,7 @@ td.score-cell {
   font-weight: 800;
 }
 
+.trip-directions:hover,
 .trip-copy:hover,
 .trip-show-map:hover {
   color: #fff;

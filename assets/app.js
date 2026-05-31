@@ -62,6 +62,11 @@ const UI_TEXT = {
     "map.loadFailedTitle": "地図ライブラリを読み込めませんでした。",
     "map.loadFailedBody": "Google Maps のリンクから各地点を開けます。",
     "map.open": "Google Mapsで開く",
+    "trip.openDirections": "Google Mapsで順路を開く",
+    "trip.openPlace": "Google Mapsで開く",
+    "trip.copy": "コピー",
+    "trip.copyDone": "コピー完了",
+    "trip.showMap": "地図",
     "map.precision": "位置精度",
     "map.precisionApproxLabel": "地域ベースの概略位置",
     "map.precisionVerifiedLabel": "実座標/検索座標",
@@ -148,6 +153,11 @@ const UI_TEXT = {
     "map.loadFailedTitle": "地图组件读取失败。",
     "map.loadFailedBody": "可以通过 Google 地图链接打开各地点。",
     "map.open": "用 Google 地图打开",
+    "trip.openDirections": "用 Google 地图顺序导航",
+    "trip.openPlace": "用 Google 地图打开",
+    "trip.copy": "复制",
+    "trip.copyDone": "复制完成",
+    "trip.showMap": "地图",
     "map.precision": "位置精度",
     "map.precisionApproxLabel": "区域概略位置",
     "map.precisionVerifiedLabel": "实坐标/搜索坐标",
@@ -935,6 +945,34 @@ function mapsUrlForSpot(spot) {
   if (meta.mapsUrl) return meta.mapsUrl;
   const query = encodeURIComponent([spot.name.ja, spot.area.ja, spot.prefecture.ja, "日本"].filter(Boolean).join(" "));
   return `https://www.google.com/maps/search/?api=1&query=${query}`;
+}
+
+function routePointForSpot(spot) {
+  const location = locationForSpot(spot);
+  if (location) return `${location.lat},${location.lng}`;
+  return [spot.name.ja, spot.area.ja, spot.prefecture.ja, "日本"].filter(Boolean).join(" ");
+}
+
+function googleMapsTripUrl() {
+  const tripSpots = tripPlan.map((id) => spots.find((spot) => spot.id === id)).filter(Boolean);
+  if (!tripSpots.length) return "https://www.google.com/maps";
+  if (tripSpots.length === 1 && !state.homePref) return mapsUrlForSpot(tripSpots[0]);
+
+  const params = new URLSearchParams({ api: "1", travelmode: "transit" });
+  if (state.homePref) {
+    params.set("origin", `${state.homePref} 日本`);
+    params.set("destination", routePointForSpot(tripSpots[tripSpots.length - 1]));
+    if (tripSpots.length > 1) {
+      params.set("waypoints", tripSpots.slice(0, -1).map(routePointForSpot).join("|"));
+    }
+  } else {
+    params.set("origin", routePointForSpot(tripSpots[0]));
+    params.set("destination", routePointForSpot(tripSpots[tripSpots.length - 1]));
+    if (tripSpots.length > 2) {
+      params.set("waypoints", tripSpots.slice(1, -1).map(routePointForSpot).join("|"));
+    }
+  }
+  return `https://www.google.com/maps/dir/?${params.toString()}`;
 }
 
 function selectedOrAll(set) {
@@ -2130,8 +2168,13 @@ function renderTripPanel() {
       </li>`;
   }
   html += `</ol>`;
-  // Show on map button
-  html += `<div class="trip-actions"><button class="trip-show-map" id="showTripOnMap" type="button">🗺 地図</button><button class="trip-copy" id="copyTripPlan" type="button">📋 コピー</button></div>`;
+  const routeUrl = googleMapsTripUrl();
+  const routeLabel = tripPlan.length > 1 || state.homePref ? t("trip.openDirections") : t("trip.openPlace");
+  html += `<div class="trip-actions">
+    <a class="trip-directions" id="openTripDirections" href="${escapeHtml(routeUrl)}" target="_blank" rel="noreferrer">↗ ${escapeHtml(routeLabel)}</a>
+    <button class="trip-show-map" id="showTripOnMap" type="button">${escapeHtml(t("trip.showMap"))}</button>
+    <button class="trip-copy" id="copyTripPlan" type="button">${escapeHtml(t("trip.copy"))}</button>
+  </div>`;
   panel.innerHTML = html;
 
   // Bind map button
@@ -2148,9 +2191,11 @@ function renderTripPanel() {
         const spot = spots.find(s => s.id === sid);
         return spot ? `${i + 1}. ${spot.name.ja}（${spot.prefecture.ja}）` : "";
       }).filter(Boolean);
+      lines.push("");
+      lines.push(googleMapsTripUrl());
       navigator.clipboard.writeText(lines.join("\n")).then(() => {
-        copyBtn.textContent = "✓ コピー完了";
-        setTimeout(() => { copyBtn.textContent = "📋 コピー"; }, 2000);
+        copyBtn.textContent = `✓ ${t("trip.copyDone")}`;
+        setTimeout(() => { copyBtn.textContent = t("trip.copy"); }, 2000);
       });
     });
   }

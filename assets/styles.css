@@ -1116,6 +1116,115 @@ td.score-cell {
   margin: 0.3rem 0 0;
 }
 
+/* ---- Trip Plan ---- */
+.trip-content {
+  font-size: 0.8rem;
+}
+
+.trip-empty {
+  color: var(--muted);
+  font-style: italic;
+  font-size: 0.78rem;
+  text-align: center;
+}
+
+.trip-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.trip-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.trip-num {
+  width: 1.4em;
+  height: 1.4em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--teal);
+  color: #fff;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.trip-name {
+  flex: 1;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trip-pref {
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+.trip-remove {
+  border: none;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 0.1rem 0.2rem;
+}
+
+.trip-remove:hover { color: var(--red); }
+
+.trip-show-map {
+  width: 100%;
+  padding: 0.35rem;
+  margin-top: 0.5rem;
+  border: 1px solid var(--teal);
+  border-radius: 6px;
+  background: var(--teal-soft);
+  color: var(--teal);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.trip-show-map:hover {
+  background: var(--teal);
+  color: #fff;
+}
+
+/* ---- Trip button on cards ---- */
+.trip-btn {
+  border: 1.5px solid var(--line);
+  background: var(--paper);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--muted);
+  transition: all 0.15s;
+}
+
+.trip-btn:hover {
+  border-color: var(--teal);
+  color: var(--teal);
+}
+
+.trip-btn.in-trip {
+  background: var(--teal-soft);
+  border-color: var(--teal);
+  color: var(--teal);
+}
+
 /* ---- Memo ---- */
 .memo-wrap {
   display: flex;

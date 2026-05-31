@@ -70,6 +70,7 @@ const UI_TEXT = {
     "filters.weatherMatch": "天気に合う場所のみ",
     "filters.home": "出発地",
     "filters.homeNone": "設定しない",
+    "sections.trip": "旅程計画",
     "sections.weather": "週末の天気",
     "weather.loading": "読み込み中...",
     "weather.error": "取得できませんでした",
@@ -82,6 +83,8 @@ const UI_TEXT = {
     "memo.save": "保存",
     "memo.edit": "編集",
     "weather.comfortLabel": "快適気温",
+    "card.addToTrip": "旅程に追加",
+    "card.removeFromTrip": "旅程から外す",
     "card.scoreBreakdown": "スコア内訳",
     "card.expandAll": "全て展開",
     "card.collapseAll": "全て折畳",
@@ -151,6 +154,7 @@ const UI_TEXT = {
     "filters.weatherMatch": "只看天气合适的地点",
     "filters.home": "出发地",
     "filters.homeNone": "不设置",
+    "sections.trip": "行程计划",
     "sections.weather": "周末天气",
     "weather.loading": "加载中...",
     "weather.error": "获取失败",
@@ -163,6 +167,8 @@ const UI_TEXT = {
     "memo.save": "保存",
     "memo.edit": "编辑",
     "weather.comfortLabel": "舒适温度",
+    "card.addToTrip": "加入行程",
+    "card.removeFromTrip": "移出行程",
     "card.scoreBreakdown": "评分详情",
     "card.expandAll": "全部展开",
     "card.collapseAll": "全部折叠",
@@ -344,6 +350,7 @@ const state = {
 if (!UI_TEXT[state.lang]) state.lang = "ja";
 
 const saved = new Set(safeJsonStorage("photoSpotSaved", []));
+const tripPlan = safeJsonStorage("photoSpotTripPlan", []); // ordered array of spot IDs
 const memos = safeJsonStorage("photoSpotMemos", {});
 let weatherCache = null; // { updated, forecasts: { prefJa: { high, low, rain, icon } } }
 let tableColumns = loadTableColumns();
@@ -394,6 +401,8 @@ const el = {
   collapseAllScores: document.querySelector("#collapseAllScores"),
   scoreToggleGroup: document.querySelector("#scoreToggleGroup"),
   homePref: document.querySelector("#homePref"),
+  tripContent: document.querySelector("#tripContent"),
+  clearTrip: document.querySelector("#clearTrip"),
 };
 
 const spots = rawSpots.map(normalizeSpot);
@@ -1098,6 +1107,7 @@ function cardTemplate(spot) {
           <p>${escapeHtml(localized(spot.prefecture))} / ${escapeHtml(localized(spot.area))}</p>
         </div>
         <button class="save-btn ${saved.has(id) ? "saved" : ""}" type="button" data-save="${id}" title="${escapeHtml(t("card.save"))}" aria-label="${escapeHtml(t("card.save"))}">★</button>
+        <button class="trip-btn ${tripPlan.includes(id) ? "in-trip" : ""}" type="button" data-trip="${id}" title="${escapeHtml(tripPlan.includes(id) ? t("card.removeFromTrip") : t("card.addToTrip"))}" aria-label="${escapeHtml(t("card.addToTrip"))}">${tripPlan.includes(id) ? "📍" : "○"}</button>
       </div>
       <div class="score-line">
         <div class="score">${escapeHtml(spot.score)}</div>
@@ -1682,11 +1692,17 @@ function bindEvents() {
     state.sort = event.target.value;
     render();
   });
+  el.clearTrip.addEventListener("click", clearTrip);
   el.resetFilters.addEventListener("click", resetFilters);
   el.cardViewBtn.addEventListener("click", () => setView("cards"));
   el.tableViewBtn.addEventListener("click", () => setView("table"));
   el.mapViewBtn.addEventListener("click", () => setView("map"));
   document.addEventListener("click", (event) => {
+    const tripButton = event.target.closest("[data-trip]");
+    if (tripButton) {
+      toggleTripSpot(tripButton.dataset.trip);
+      return;
+    }
     const saveButton = event.target.closest("[data-save]");
     if (saveButton) {
       updateSaved(saveButton.dataset.save);
@@ -1740,6 +1756,7 @@ function setLanguage(lang) {
   applyStaticLanguage();
   renderScoringModel();
   renderPhotoSites();
+  renderTripPanel();
   renderWeather();
   syncControls();
   render();
@@ -2031,12 +2048,81 @@ function travelTimeStr(spot) {
   return `🚃 約${h ? h + "時間" : ""}${m ? m + "分" : ""}`;
 }
 
+// ---- Trip Plan ----
+function toggleTripSpot(id) {
+  const idx = tripPlan.indexOf(id);
+  if (idx >= 0) {
+    tripPlan.splice(idx, 1);
+  } else {
+    tripPlan.push(id);
+  }
+  localStorage.setItem("photoSpotTripPlan", JSON.stringify(tripPlan));
+  render();
+}
+
+function clearTrip() {
+  tripPlan.length = 0;
+  localStorage.setItem("photoSpotTripPlan", JSON.stringify(tripPlan));
+  render();
+}
+
+function renderTripPanel() {
+  const panel = document.querySelector("#tripContent");
+  if (!panel) return;
+  if (tripPlan.length === 0) {
+    panel.innerHTML = `<p class="trip-empty">旅程に追加してみよう</p>`;
+    return;
+  }
+  let totalMins = 0;
+  let html = `<ol class="trip-list">`;
+  for (let i = 0; i < tripPlan.length; i++) {
+    const sid = tripPlan[i];
+    const spot = spots.find(s => s.id === sid);
+    if (!spot) continue;
+    const loc = locationForSpot(spot);
+    const travelStr = i > 0 ? travelTimeStrBetween(tripPlan[i-1], sid) : "";
+    html += `
+      <li class="trip-item">
+        <span class="trip-num">${i + 1}</span>
+        <span class="trip-name">${escapeHtml(localized(spot.name))}</span>
+        <span class="trip-pref">${escapeHtml(localized(spot.prefecture))}</span>
+        <button class="trip-remove" type="button" data-trip="${sid}" title="外す">✕</button>
+      </li>`;
+  }
+  html += `</ol>`;
+  // Show on map button
+  html += `<button class="trip-show-map" id="showTripOnMap" type="button">🗺 地図で見る</button>`;
+  panel.innerHTML = html;
+
+  // Bind map button
+  const mapBtn = document.querySelector("#showTripOnMap");
+  if (mapBtn) {
+    mapBtn.addEventListener("click", () => {
+      setView("map");
+    });
+  }
+}
+
+function travelTimeStrBetween(fromId, toId) {
+  if (!state.homePref) return "";
+  const fromSpot = spots.find(s => s.id === fromId);
+  const toSpot = spots.find(s => s.id === toId);
+  if (!fromSpot || !toSpot) return "";
+  // If same prefecture, show short
+  if (fromSpot.prefecture.ja === toSpot.prefecture.ja) return "→";
+  const mins = TRAVEL_TIME[fromSpot.prefecture.ja]?.[toSpot.prefecture.ja];
+  if (mins == null) return "→";
+  if (mins < 10) return "→";
+  return `🚃${mins}分→`;
+}
+
 function init() {
   applyStaticLanguage();
   el.totalCount.textContent = spots.length;
   el.avgScore.textContent = Math.round(spots.reduce((sum, spot) => sum + spot.score, 0) / spots.length);
   renderScoringModel();
   renderPhotoSites();
+  renderTripPanel();
   syncControls();
   bindEvents();
   render();
